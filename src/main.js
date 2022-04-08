@@ -1,4 +1,4 @@
-var m = {
+var mnemonics = {
     im: {
     },
     zp: {
@@ -12,11 +12,18 @@ var m = {
     }
 };
 
+function parseHex(str)
+{
+    return parseInt(str, 16);
+}
+
 function assemble(str)
 {
     var words = str.split(' ');
-    var s = {
-        m: ''
+    var instruction = {
+        mnemonic: '',
+        operand: null,
+        table: null
     };
     
     for (var i = 0; i < words.length; i++)
@@ -25,35 +32,36 @@ function assemble(str)
         
         if (/^\$\d{2}$/.test(word))
         {
-            s.o = parseInt(word.slice(1), 16);
-            s.table = m.zp;
+            instruction.operand = parseHex(word.slice(1));
+            instruction.table = mnemonics.zp;
         }
         else if (/^\$\d{4}$/.test(word))
         {
-            s.o = parseInt(word.slice(1), 16);
-            s.table = m.ab;
+            instruction.operand = parseHex(word.slice(1));
+            instruction.table = mnemonics.ab;
         }
         else {
-            s.m += word;
+            instruction.mnemonic += word;
         }
     }
 
-    for (var op in s.table)
+    for (var mnemonic in instruction.table)
     {
-        if (op === s.m)
+        if (mnemonic === instruction.mnemonic)
         {
-            return [s.table[op], ...[s.o]];
+            return [instruction.table[mnemonic], instruction.operand];
         }
     }
 
-    throw new Error('Unknown');
+    throw new Error(`Failed assembling '${str}'`);
 }
 
 var lines = [
     'adc $10',
     'lda $0200 y',
-    'lda $0020 ',
-    'lda $00 x'
+    'lda $0020',
+    'lda $00 x',
+    'ldx $00'
 ];
 
 var inter = lines
@@ -61,8 +69,8 @@ var inter = lines
         try {
             return assemble(line);
         }
-        catch {
-            return 'INVALID';
+        catch (err) {
+            return err.message;
         }
     });
 
