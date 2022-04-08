@@ -1,78 +1,58 @@
-var types = {
-    zpage: 'zpage',
-    x: 'x'
-};
-
-var mnemonics = {
-    lda: [
-        [[types.zpage, types.x], 'B5']
-    ],
-    adc: [
-        [[types.zpage], '65']
-    ]
+var m = {
+    im: {
+    },
+    zp: {
+        adc: 0x65,
+        lda: 0x00,
+        ldax: 0xB5
+    },
+    ab: {
+        lda: 0xAD,
+        lday: 0xB9
+    }
 };
 
 function assemble(str)
 {
     var words = str.split(' ');
-    var instr = {};
+    var s = {
+        m: ''
+    };
+    
     for (var i = 0; i < words.length; i++)
     {
-        for (var key in mnemonics)
+        var word = words[i];
+        
+        if (/^\$\d{2}$/.test(word))
         {
-            if (key === words[i])
-            {
-                var next = i + 1;
-                if (next < words.length)
-                {
-                    var params = words
-                        .slice(next)
-                        .map((item) => {
-                            if (item == '$00')
-                            {
-                                return types.zpage;
-                            }
-                            else if (item == 'x')
-                            {
-                                return types.x;
-                            }
-
-                            return 'unknown';
-                        });
-
-                    for (var pair of mnemonics[key])
-                    {
-                        var [p, opcode] = pair;
-                        if (JSON.stringify(params) == JSON.stringify(p)) {
-                            instr = {
-                                mnemonic: key,
-                                params: params,
-                                opcode: opcode
-                            };
-
-                            break;
-                        }
-                    }
-                }
-                
-                break;
-            }
+            s.o = parseInt(word.slice(1), 16);
+            s.table = m.zp;
         }
-
-        if (!instr.mnemonic)
+        else if (/^\$\d{4}$/.test(word))
         {
-            throw new Error(`Couldn't find mnemonic for ${words[i]}`);
+            s.o = parseInt(word.slice(1), 16);
+            s.table = m.ab;
         }
-
-        break;
+        else {
+            s.m += word;
+        }
     }
 
-    return instr;
+    for (var op in s.table)
+    {
+        if (op === s.m)
+        {
+            return [s.table[op], ...[s.o]];
+        }
+    }
+
+    throw new Error('Unknown');
 }
 
 var lines = [
-    'adc $00',
-    'lda $00 y',
+    'adc $10',
+    'lda $0200 y',
+    'lda $0020 ',
     'lda $00 x'
 ];
 
