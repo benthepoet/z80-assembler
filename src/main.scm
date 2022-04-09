@@ -1,9 +1,12 @@
 (define mnemonics
   '(("adc"
-     ((:d8) 69))
+     ((:d8) #x69))
     ("lda"
-     ((:a8) 00)
-     ((:a8 :x) 00))))
+     ((:a8) #xA5)
+     ((:a8 :x) #xB5)
+     ((:a16) #xAD)
+     ((:a16 :x) #xBD)
+     ((:a16 :y) #xB9))))
 
 (define lines
   '())
@@ -13,6 +16,7 @@
 (define +mnemonic+ "")
 (define +operand+ #f)
 (define +tokens+ '())
+(define +opcode+ #f)
 
 (define is-hex
   (lambda (str)
@@ -63,6 +67,9 @@
             (if (string=? word "x")
                 (set! +tokens+ (append +tokens+ '(:x))))
 
+            (if (string=? word "y")
+                (set! +tokens+ (append +tokens+ '(:y))))
+            
             (if (char=? (string-ref word 0) #\#)
                 (begin
                   (loop (substring word 1 (string-length word)) ":d")))
@@ -83,13 +90,12 @@
             (patterns (cdr table)))
         (if (string=? name +mnemonic+)
             (begin
-              (println "MNEMONIC " name)
               (let p-loop ((pattern (car patterns))
                            (rest-patterns (cdr patterns)))
                 (let ((tokens (car pattern))
                       (opcode (cadr pattern)))
                   (if (equal? tokens +tokens+)
-                      (println "OPCODE " opcode)
+                      (set! +opcode+ opcode)
                       (if (pair? rest-patterns)
                           (p-loop (car rest-patterns) (cdr rest-patterns)))))))))
                      
@@ -106,14 +112,22 @@
     (set! +mnemonic+ "")
     (set! +operand+ #f)
     (set! +tokens+ '())
+    (set! +opcode+ #f)
 
     (let ((mnemonic (read-word)))
       (if (not (string=? mnemonic ""))
           (begin
             (set! +mnemonic+ mnemonic)
             (read-tokens)
-            (println +mnemonic+ "," +operand+ "," +tokens+)
-            (find-opcode))))))     
+            (find-opcode)
+            (if (not +opcode+)
+                (raise "OPCODE NOT FOUND")
+                (println
+                 (number->string +opcode+ 16) ":"
+                 +mnemonic+ ","
+                 (number->string +operand+ 16) ","
+                 +tokens+)))))))
+                 
 
 (define hex->number
   (lambda (str)
@@ -145,5 +159,6 @@
               (raise "Invalid hex character"))))))
 
 (assemble "adc #$FE")
-(assemble "lda $FF")
+(assemble "lda $FF00")
 (assemble "lda $10 x")
+(assemble "lda $A012 y")
