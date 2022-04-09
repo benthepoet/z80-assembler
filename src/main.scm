@@ -1,5 +1,6 @@
 (define mnemonics
-  '(("adc")
+  '(("adc"
+     ((:d8) 69))
     ("lda"
      ((:a8) 00)
      ((:a8 :x) 00))))
@@ -60,7 +61,7 @@
           (begin
             
             (if (string=? word "x")
-                (set! +tokens+ (cons +tokens+ ':x)))
+                (set! +tokens+ (append +tokens+ '(:x))))
 
             (if (char=? (string-ref word 0) #\#)
                 (begin
@@ -69,10 +70,33 @@
             (if (char=? (string-ref word 0) #\$)
                 (let ((hex (hex->number (substring word 1 (string-length word)))))
                   (set! +operand+ (car hex))
-                  (set! +tokens+ (cons +tokens+
-                                       (string->symbol
-                                        (string-append hex-type (number->string (cadr hex))))))))
+                  (set! +tokens+ (append +tokens+
+                                       (list (string->symbol
+                                              (string-append hex-type (number->string (cadr hex)))))))))
             (loop (read-word) ":a"))))))
+
+(define find-opcode
+  (lambda ()
+    (let loop ((table (car mnemonics))
+               (rest (cdr mnemonics)))
+      (let ((name (car table))
+            (patterns (cdr table)))
+        (if (string=? name +mnemonic+)
+            (begin
+              (println "MNEMONIC " name)
+              (let p-loop ((pattern (car patterns))
+                           (rest-patterns (cdr patterns)))
+                (let ((tokens (car pattern))
+                      (opcode (cadr pattern)))
+                  (if (equal? tokens +tokens+)
+                      (println "OPCODE " opcode)
+                      (if (pair? rest-patterns)
+                          (p-loop (car rest-patterns) (cdr rest-patterns)))))))))
+                     
+      (if (pair? rest)
+          (loop (car rest) (cdr rest))))))
+          
+    
 
 (define assemble
   (lambda (line)
@@ -88,7 +112,8 @@
           (begin
             (set! +mnemonic+ mnemonic)
             (read-tokens)
-            (println +mnemonic+ "," +operand+ "," +tokens+))))))     
+            (println +mnemonic+ "," +operand+ "," +tokens+)
+            (find-opcode))))))     
 
 (define hex->number
   (lambda (str)
@@ -119,6 +144,6 @@
                     (list v (* (/ l 2) 8))))
               (raise "Invalid hex character"))))))
 
-(assemble "adc #$FE x")
+(assemble "adc #$FE")
 (assemble "lda $FF")
 (assemble "lda $10 x")
