@@ -8,7 +8,9 @@
      ((:a16 :x) #xBD)
      ((:a16 :y) #xB9)
      ((:lparen :a16 :x :rparen) #xA1)
-     ((:lparen :a16 :rparen :y) #xB1))))
+     ((:lparen :a16 :rparen :y) #xB1))
+    ("pha"
+     (() #x48))))
 
 (define lines
   '())
@@ -20,23 +22,9 @@
 (define +tokens+ '())
 (define +opcode+ #f)
 
-(define is-hex
+(define string-empty?
   (lambda (str)
-    (if (or (not (or (= (string-length str) 3) (= (string-length str) 5)))
-            (not (char=? (string-ref str 0) #\$)))
-        (raise "Invalid hex format")
-        (let loop ((i 1)
-                   (length (string-length str))
-                   (c (string-ref str 1)))
-          (if (or (and (char>=? c #\0)
-                       (char<=? c #\9))
-                  (and (char>=? c #\A)
-                       (char<=? c #\F)))
-              (begin
-                (set! i (+ i 1))
-                (if (< i length)
-                    (loop i length (string-ref str i))))
-              (raise "Invalid hex character"))))))
+    (string=? str ""))) 
 
 (define read-word
   (lambda ()
@@ -55,7 +43,7 @@
                           (set! +line-cursor+ i)))
                     (set! +line-cursor+ (+ +line-cursor+ 1))))
               (if (and (< i length)
-                       (string=? word ""))
+                       (string-empty? word))
                   (loop (+ i 1))
                   word)))))))
 
@@ -63,7 +51,7 @@
   (lambda ()
     (let loop ((word (read-word))
                (hex-type ":a"))
-      (if (not (string=? word ""))
+      (if (not (string-empty? word))
           (begin
 
             (if (string=? word "(")
@@ -142,48 +130,58 @@
     (set! +opcode+ #f)
 
     (let ((mnemonic (read-word)))
-      (if (not (string=? mnemonic ""))
+      (if (not (string-empty? mnemonic))
           (begin
             (set! +mnemonic+ mnemonic)
             (read-tokens)
             (find-opcode)
             (if (not +opcode+)
                 (raise "OPCODE NOT FOUND")
-                (println
-                 (number->string +opcode+ 16) ":"
-                 +mnemonic+ ","
-                 (number->string +operand+ 16) ","
-                 +tokens+)))))))
-                 
+                (begin
+                  (pp (append (list +mnemonic+) +tokens+))
+                  (println "Opcode: " (number->string +opcode+ #x10))
+                  (if +operand+
+                      (println "Operand: " (number->string +operand+ #x10)))
+                  (println))))))))
+
+(define char-digit?
+  (lambda (c)
+    (and (char>=? c #\0)
+         (char<=? c #\9))))
+
+(define char-hex-letter?
+  (lambda (c)
+    (and (char>=? c #\A)
+         (char<=? c #\F))))
 
 (define hex->number
   (lambda (str)
-    (let ((l (string-length str))
-          (v 0))
+    (let ((length (string-length str))
+          (value 0))
       
-      (if (= l 0)
-          (raise "Input was empty."))
+      (if (string-empty? str)
+          (raise "Input string is empty."))
       
-      (if (> (modulo l 2) 0)
-          (raise "Hex characters must be in pairs."))
-
       (let loop ((i 0)  
                  (c (string-ref str 0)))
-          (if (or (and (char>=? c #\0)
-                       (char<=? c #\9))
-                  (and (char>=? c #\A)
-                       (char<=? c #\F)))
-              (let ((k 0))
-                (if (and (char>=? c #\0)
-                         (char<=? c #\9))
-                    (set! k (- (char->integer c) 48))
-                    (set! k (- (char->integer c) 55)))
-                (set! v (bitwise-ior (arithmetic-shift v 4) k))
-                (set! i (+ i 1))
-                (if (< i l)
-                    (loop i (string-ref str i))
-                    (list v (* (/ l 2) 8))))
-              (raise "Invalid hex character"))))))
+        
+        (if (or (char-digit? c)
+                (char-hex-letter? c))
+              
+            (let ((nibble 0))
+              (if (char-digit? c)
+                  (set! nibble (- (char->integer c) 48))
+                  (set! nibble (- (char->integer c) 55)))
+              
+              (set! value (bitwise-ior (arithmetic-shift value 4) nibble))
+              (set! i (+ i 1))
+
+              (if (< i length)
+                  (loop i (string-ref str i))
+                  (let ((bits (* (/ (+ length (modulo length 2)) 2) 8)))
+                    (list value bits))))
+            
+            (raise "Invalid hex character"))))))
 
 (assemble "adc #$FE")
 (assemble "lda $FF00")
@@ -191,3 +189,4 @@
 (assemble "lda $A012,y")
 (assemble "lda ($B23F,x)")
 (assemble "lda ($0020),y")
+(assemble "pha")
