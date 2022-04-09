@@ -6,7 +6,9 @@
      ((:a8 :x) #xB5)
      ((:a16) #xAD)
      ((:a16 :x) #xBD)
-     ((:a16 :y) #xB9))))
+     ((:a16 :y) #xB9)
+     ((:lparen :a16 :x :rparen) #xA1)
+     ((:lparen :a16 :rparen :y) #xB1))))
 
 (define lines
   '())
@@ -63,6 +65,12 @@
                (hex-type ":a"))
       (if (not (string=? word ""))
           (begin
+
+            (if (string=? word "(")
+                (set! +tokens+ (append +tokens+ '(:lparen))))
+
+            (if (string=? word ")")
+                (set! +tokens+ (append +tokens+ '(:rparen))))
             
             (if (string=? word "x")
                 (set! +tokens+ (append +tokens+ '(:x))))
@@ -101,13 +109,32 @@
                      
       (if (pair? rest)
           (loop (car rest) (cdr rest))))))
-          
-    
 
+(define load-line-buffer
+  (lambda (line)
+    (let loop ((i 0)
+               (l (string-length line))
+               (s "")
+               (lc #\space))
+
+      (if (< i l)
+          
+          (let ((c (string-ref line i)))
+           (cond
+            ((char=? c #\,) (set! s (string-append s " ")))
+            ((char=? c #\() (set! s (string-append s " ( ")))
+            ((char=? c #\)) (set! s (string-append s " ) ")))
+            ((not (and (char=? c #\space) (char=? lc c))) (set! s (string-append s (string c)))))
+           (loop (+ i 1) l s c))
+          (begin
+            (pp s)
+            (set! +line-buffer+ s))))))
+    
 (define assemble
   (lambda (line)
     
-    (set! +line-buffer+ line)
+    (load-line-buffer line)
+    
     (set! +line-cursor+ 0)
     (set! +mnemonic+ "")
     (set! +operand+ #f)
@@ -160,5 +187,7 @@
 
 (assemble "adc #$FE")
 (assemble "lda $FF00")
-(assemble "lda $10 x")
-(assemble "lda $A012 y")
+(assemble "lda $10,x")
+(assemble "lda $A012,y")
+(assemble "lda ($B23F,x)")
+(assemble "lda ($0020),y")
