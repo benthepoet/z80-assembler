@@ -16,6 +16,7 @@
 
 (define *line-buffer* +empty-string+)
 (define *line-cursor* 0)
+(define *location-counter* 0)
 (define *mnemonic* +empty-string+)
 (define *tokens* '())
 (define *opcode* #f)
@@ -53,21 +54,21 @@
       (if (not (string-empty? word))
           (begin
 
-            (if (string=? word "(")
-                (set! *tokens* (append *tokens* '(:lparen))))
+            (cond
+             ((string=? word "(")
+              (set! *tokens* (append *tokens* '(:lparen))))
 
-            (if (string=? word ")")
-                (set! *tokens* (append *tokens* '(:rparen))))
+             ((string=? word ")")
+              (set! *tokens* (append *tokens* '(:rparen))))
             
-            (if (string=? word "x")
-                (set! *tokens* (append *tokens* '(:x))))
+             ((string=? word "x")
+              (set! *tokens* (append *tokens* '(:x))))
 
-            (if (string=? word "y")
-                (set! *tokens* (append *tokens* '(:y))))
+             ((string=? word "y")
+              (set! *tokens* (append *tokens* '(:y)))))
             
             (if (char=? (string-ref word 0) #\#)
-                (begin
-                  (loop (substring word 1 (string-length word)) ":d")))
+                (loop (substring word 1 (string-length word)) ":d"))
 
             (if (char=? (string-ref word 0) #\$)
                 (let ((hex (hex->number (substring word 1 (string-length word)))))
