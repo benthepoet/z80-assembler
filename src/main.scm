@@ -1,34 +1,60 @@
-(define types
-  '(:label
-    :mnemonic
-    :word
-    :register))
-
 (define mnemonics
   '(("adc")
-    ("lda")))
+    ("lda"
+     ((:a8) 00)
+     ((:a8 :x) 00))))
 
 (define lines
   '())
 
+(define +line-buffer+ "")
+(define +line-cursor+ 0)
+(define +mnemonic+ "")
+(define +operand+ #f)
+(define +tokens+ '())
+
 (define read-word
   (lambda ()
     (let ((word "")
-          (length (string-length +input-buffer+)))
-      (let loop ((i +input-cursor+))
-          (if (or (= i length)
-                  (char-whitespace? (string-ref +input-buffer+ i)))
-              (begin
-                (if (> (- i +input-cursor+) 0)
-                    (begin
-                      (set! word (substring +input-buffer+ +input-cursor+ i))
-                      (process-word word)
-                      (set! +input-cursor+ i)))
-                (set! +input-cursor+ (+ +input-cursor+ 1))))
-          (if (and (< i length)
-                   (string=? word ""))
-              (loop (+ i 1)))))))
+          (length (string-length +line-buffer+)))
+      (let loop ((i +line-cursor+))
+        (if (> +line-cursor+ length)
+            word
+            (begin
+              (if (or (= i length)
+                      (char-whitespace? (string-ref +line-buffer+ i)))
+                  (begin
+                    (if (> (- i +line-cursor+) 0)
+                        (begin
+                          (set! word (substring +line-buffer+ +line-cursor+ i))
+                          (set! +line-cursor+ i)))
+                    (set! +line-cursor+ (+ +line-cursor+ 1))))
+              (if (and (< i length)
+                       (string=? word ""))
+                  (loop (+ i 1))
+                  word)))))))
+
+(define read-tokens
+  (lambda ()
+    (let loop ((word (read-word)))
+      (if (not (string=? word ""))
+          (begin
+            (if (string=? word "x")
+                (set! +tokens+ (cons +tokens+ ':x)))
+            (if (char=? (string-ref word 0) #\$)
+                (set! +tokens+ (cons +tokens+ ':a8)))
+            (loop (read-word)))))))
 
 (define assemble
   (lambda (line)
-    (println line)))
+    (set! +line-buffer+ line)
+    (set! +line-cursor+ 0)
+    (let ((mnemonic (read-word)))
+      (if (not (string=? mnemonic ""))
+          (begin
+            (set! +mnemonic+ mnemonic)
+            (read-tokens)
+            (println +mnemonic+ +tokens+))))))     
+
+(assemble "lda $00")
+(assemble "lda $00 x")
