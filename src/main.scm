@@ -13,6 +13,24 @@
 (define +operand+ #f)
 (define +tokens+ '())
 
+(define is-hex
+  (lambda (str)
+    (if (or (not (or (= (string-length str) 3) (= (string-length str) 5)))
+            (not (char=? (string-ref str 0) #\$)))
+        (raise "Invalid hex format")
+        (let loop ((i 1)
+                   (length (string-length str))
+                   (c (string-ref str 1)))
+          (if (or (and (char>=? c #\0)
+                       (char<=? c #\9))
+                  (and (char>=? c #\A)
+                       (char<=? c #\F)))
+              (begin
+                (set! i (+ i 1))
+                (if (< i length)
+                    (loop i length (string-ref str i))))
+              (raise "Invalid hex character"))))))
+
 (define read-word
   (lambda ()
     (let ((word "")
@@ -56,5 +74,7 @@
             (read-tokens)
             (println +mnemonic+ +tokens+))))))     
 
+
+(is-hex "$09F0")
 (assemble "lda $00")
 (assemble "lda $00 x")
