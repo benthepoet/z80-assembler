@@ -64,8 +64,7 @@
 
             (if (char=? (string-ref word 0) #\#)
                 (begin
-                  (set! hex-type ":d")
-                  (set! word (substring word 1 (string-length word)))))
+                  (loop (substring word 1 (string-length word)) ":d")))
 
             (if (char=? (string-ref word 0) #\$)
                 (let ((hex (hex->number (substring word 1 (string-length word)))))
@@ -120,6 +119,6 @@
                     (list v (* (/ l 2) 8))))
               (raise "Invalid hex character"))))))
 
-(assemble "adc #$10")
+(assemble "adc #$FE x")
 (assemble "lda $FF")
 (assemble "lda $10 x")
