@@ -117,7 +117,11 @@
           (begin
             (pp s)
             (set! +line-buffer+ s))))))
-    
+
+(define raise-error
+  (lambda (error)
+    (raise (string-append "Assembler error: " error))))
+
 (define assemble
   (lambda (line)
     
@@ -136,7 +140,7 @@
             (read-tokens)
             (find-opcode)
             (if (not +opcode+)
-                (raise "OPCODE NOT FOUND")
+                (raise-error "Instruction could not be interpreted")
                 (begin
                   (pp (append (list +mnemonic+) +tokens+))
                   (println "Opcode: " (number->string +opcode+ #x10))
@@ -160,7 +164,7 @@
           (value 0))
       
       (if (string-empty? str)
-          (raise "Input string is empty."))
+          (raise-error "Input string is empty"))
       
       (let loop ((i 0)  
                  (c (string-ref str 0)))
@@ -181,12 +185,12 @@
                   (let ((bits (* (/ (+ length (modulo length 2)) 2) 8)))
                     (list value bits))))
             
-            (raise "Invalid hex character"))))))
+            (raise-error "Invalid hex character"))))))
 
-(assemble "adc #$FE")
+(assemble "adc #$FD")
 (assemble "lda $FF00")
 (assemble "lda $10,x")
-(assemble "lda $A012,y")
+(assemble "lda $AF12,y")
 (assemble "lda ($B23F,x)")
 (assemble "lda ($0020),y")
 (assemble "pha")
