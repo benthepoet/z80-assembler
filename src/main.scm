@@ -54,25 +54,42 @@
 
 (define read-tokens
   (lambda ()
-    (let loop ((word (read-word)))
+    (let loop ((word (read-word))
+               (hex-type ":a"))
       (if (not (string=? word ""))
           (begin
+            
             (if (string=? word "x")
                 (set! +tokens+ (cons +tokens+ ':x)))
+
+            (if (char=? (string-ref word 0) #\#)
+                (begin
+                  (set! hex-type ":d")
+                  (set! word (substring word 1 (string-length word)))))
+
             (if (char=? (string-ref word 0) #\$)
-                (set! +tokens+ (cons +tokens+ ':a8)))
-            (loop (read-word)))))))
+                (let ((hex (hex->number (substring word 1 (string-length word)))))
+                  (set! +operand+ (car hex))
+                  (set! +tokens+ (cons +tokens+
+                                       (string->symbol
+                                        (string-append hex-type (number->string (cadr hex))))))))
+            (loop (read-word) ":a"))))))
 
 (define assemble
   (lambda (line)
+    
     (set! +line-buffer+ line)
     (set! +line-cursor+ 0)
+    (set! +mnemonic+ "")
+    (set! +operand+ #f)
+    (set! +tokens+ '())
+
     (let ((mnemonic (read-word)))
       (if (not (string=? mnemonic ""))
           (begin
             (set! +mnemonic+ mnemonic)
             (read-tokens)
-            (println +mnemonic+ +tokens+))))))     
+            (println +mnemonic+ "," +operand+ "," +tokens+))))))     
 
 (define hex->number
   (lambda (str)
@@ -91,15 +108,18 @@
                        (char<=? c #\9))
                   (and (char>=? c #\A)
                        (char<=? c #\F)))
-              (begin
-                (set! v (bitwise-ior (arithmetic-shift v 4) c))
+              (let ((k 0))
+                (if (and (char>=? c #\0)
+                         (char<=? c #\9))
+                    (set! k (- (char->integer c) 48))
+                    (set! k (- (char->integer c) 55)))
+                (set! v (bitwise-ior (arithmetic-shift v 4) k))
                 (set! i (+ i 1))
                 (if (< i l)
-                    (loop i (string-ref str i))))
+                    (loop i (string-ref str i))
+                    (list v (* (/ l 2) 8))))
               (raise "Invalid hex character"))))))
 
-(hex->number "00FF")
-
-(is-hex "$09F0")
-(assemble "lda $00")
-(assemble "lda $00 x")
+(assemble "adc #$10")
+(assemble "lda $FF")
+(assemble "lda $10 x")
