@@ -74,6 +74,31 @@
             (read-tokens)
             (println +mnemonic+ +tokens+))))))     
 
+(define hex->number
+  (lambda (str)
+    (let ((l (string-length str))
+          (v 0))
+      
+      (if (= l 0)
+          (raise "Input was empty."))
+      
+      (if (> (modulo l 2) 0)
+          (raise "Hex characters must be in pairs."))
+
+      (let loop ((i 0)  
+                 (c (string-ref str 0)))
+          (if (or (and (char>=? c #\0)
+                       (char<=? c #\9))
+                  (and (char>=? c #\A)
+                       (char<=? c #\F)))
+              (begin
+                (set! v (bitwise-ior (arithmetic-shift v 4) c))
+                (set! i (+ i 1))
+                (if (< i l)
+                    (loop i (string-ref str i))))
+              (raise "Invalid hex character"))))))
+
+(hex->number "00FF")
 
 (is-hex "$09F0")
 (assemble "lda $00")
