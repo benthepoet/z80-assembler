@@ -12,36 +12,35 @@
     ("pha"
      (() #x48))))
 
-(define lines
-  '())
+(define +empty-string+ "")
 
-(define +line-buffer+ "")
-(define +line-cursor+ 0)
-(define +mnemonic+ "")
-(define +operand+ #f)
-(define +tokens+ '())
-(define +opcode+ #f)
+(define *line-buffer* +empty-string+)
+(define *line-cursor* 0)
+(define *mnemonic* +empty-string+)
+(define *tokens* '())
+(define *opcode* #f)
+(define *operand* #f)
 
 (define string-empty?
   (lambda (str)
-    (string=? str ""))) 
+    (string=? str +empty-string+))) 
 
 (define read-word
   (lambda ()
-    (let ((word "")
-          (length (string-length +line-buffer+)))
-      (let loop ((i +line-cursor+))
-        (if (> +line-cursor+ length)
+    (let ((word +empty-string+)
+          (length (string-length *line-buffer*)))
+      (let loop ((i *line-cursor*))
+        (if (> *line-cursor* length)
             word
             (begin
               (if (or (= i length)
-                      (char-whitespace? (string-ref +line-buffer+ i)))
+                      (char-whitespace? (string-ref *line-buffer* i)))
                   (begin
-                    (if (> (- i +line-cursor+) 0)
+                    (if (> (- i *line-cursor*) 0)
                         (begin
-                          (set! word (substring +line-buffer+ +line-cursor+ i))
-                          (set! +line-cursor+ i)))
-                    (set! +line-cursor+ (+ +line-cursor+ 1))))
+                          (set! word (substring *line-buffer* *line-cursor* i))
+                          (set! *line-cursor* i)))
+                    (set! *line-cursor* (+ *line-cursor* 1))))
               (if (and (< i length)
                        (string-empty? word))
                   (loop (+ i 1))
@@ -55,16 +54,16 @@
           (begin
 
             (if (string=? word "(")
-                (set! +tokens+ (append +tokens+ '(:lparen))))
+                (set! *tokens* (append *tokens* '(:lparen))))
 
             (if (string=? word ")")
-                (set! +tokens+ (append +tokens+ '(:rparen))))
+                (set! *tokens* (append *tokens* '(:rparen))))
             
             (if (string=? word "x")
-                (set! +tokens+ (append +tokens+ '(:x))))
+                (set! *tokens* (append *tokens* '(:x))))
 
             (if (string=? word "y")
-                (set! +tokens+ (append +tokens+ '(:y))))
+                (set! *tokens* (append *tokens* '(:y))))
             
             (if (char=? (string-ref word 0) #\#)
                 (begin
@@ -72,8 +71,8 @@
 
             (if (char=? (string-ref word 0) #\$)
                 (let ((hex (hex->number (substring word 1 (string-length word)))))
-                  (set! +operand+ (car hex))
-                  (set! +tokens+ (append +tokens+
+                  (set! *operand* (car hex))
+                  (set! *tokens* (append *tokens*
                                        (list (string->symbol
                                               (string-append hex-type (number->string (cadr hex)))))))))
             (loop (read-word) ":a"))))))
@@ -84,14 +83,14 @@
                (rest (cdr mnemonics)))
       (let ((name (car table))
             (patterns (cdr table)))
-        (if (string=? name +mnemonic+)
+        (if (string=? name *mnemonic*)
             (begin
               (let p-loop ((pattern (car patterns))
                            (rest-patterns (cdr patterns)))
                 (let ((tokens (car pattern))
                       (opcode (cadr pattern)))
-                  (if (equal? tokens +tokens+)
-                      (set! +opcode+ opcode)
+                  (if (equal? tokens *tokens*)
+                      (set! *opcode* opcode)
                       (if (pair? rest-patterns)
                           (p-loop (car rest-patterns) (cdr rest-patterns)))))))))
                      
@@ -102,7 +101,7 @@
   (lambda (line)
     (let loop ((i 0)
                (l (string-length line))
-               (s "")
+               (s +empty-string+)
                (lc #\space))
 
       (if (< i l)
@@ -114,9 +113,10 @@
             ((char=? c #\)) (set! s (string-append s " ) ")))
             ((not (and (char=? c #\space) (char=? lc c))) (set! s (string-append s (string c)))))
            (loop (+ i 1) l s c))
+          
           (begin
             (pp s)
-            (set! +line-buffer+ s))))))
+            (set! *line-buffer* s))))))
 
 (define raise-error
   (lambda (error)
@@ -127,25 +127,25 @@
     
     (load-line-buffer line)
     
-    (set! +line-cursor+ 0)
-    (set! +mnemonic+ "")
-    (set! +operand+ #f)
-    (set! +tokens+ '())
-    (set! +opcode+ #f)
+    (set! *line-cursor* 0)
+    (set! *mnemonic* +empty-string+)
+    (set! *operand* #f)
+    (set! *tokens* '())
+    (set! *opcode* #f)
 
     (let ((mnemonic (read-word)))
       (if (not (string-empty? mnemonic))
           (begin
-            (set! +mnemonic+ mnemonic)
+            (set! *mnemonic* mnemonic)
             (read-tokens)
             (find-opcode)
-            (if (not +opcode+)
+            (if (not *opcode*)
                 (raise-error "Instruction could not be interpreted")
                 (begin
-                  (pp (append (list +mnemonic+) +tokens+))
-                  (println "Opcode: " (number->string +opcode+ #x10))
-                  (if +operand+
-                      (println "Operand: " (number->string +operand+ #x10)))
+                  (pp (append (list *mnemonic*) *tokens*))
+                  (println "Opcode: " (number->string *opcode* #x10))
+                  (if *operand*
+                      (println "Operand: " (number->string *operand* #x10)))
                   (println))))))))
 
 (define char-digit?
