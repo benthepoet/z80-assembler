@@ -71,32 +71,33 @@
                 (loop (substring word 1 (string-length word)) ":d"))
 
             (if (char=? (string-ref word 0) #\$)
-                (let ((hex (hex->number (substring word 1 (string-length word)))))
-                  (set! *operand* (car hex))
+                (let* ((hex (hex->number (substring word 1 (string-length word))))
+                       (bits (* (cadr hex) 8)))
+                  (set! *operand* hex)
                   (set! *tokens* (append *tokens*
                                        (list (string->symbol
-                                              (string-append hex-type (number->string (cadr hex)))))))))
+                                              (string-append hex-type (number->string bits))))))))
             (loop (read-word) ":a"))))))
 
 (define find-opcode
   (lambda ()
     (let loop ((table (car mnemonics))
-               (rest (cdr mnemonics)))
-      (let ((name (car table))
+               (tables-tail (cdr mnemonics)))
+      (let ((mnemonic (car table))
             (patterns (cdr table)))
-        (if (string=? name *mnemonic*)
+        (if (string=? mnemonic *mnemonic*)
             (begin
               (let p-loop ((pattern (car patterns))
-                           (rest-patterns (cdr patterns)))
+                           (patterns-tail (cdr patterns)))
                 (let ((tokens (car pattern))
                       (opcode (cadr pattern)))
                   (if (equal? tokens *tokens*)
                       (set! *opcode* opcode)
-                      (if (pair? rest-patterns)
-                          (p-loop (car rest-patterns) (cdr rest-patterns)))))))))
+                      (if (pair? patterns-tail)
+                          (p-loop (car patterns-tail) (cdr patterns-tail)))))))))
                      
-      (if (pair? rest)
-          (loop (car rest) (cdr rest))))))
+      (if (pair? tables-tail)
+          (loop (car tables-tail) (cdr tables-tail))))))
 
 (define load-line-buffer
   (lambda (line)
@@ -144,10 +145,15 @@
                 (raise-error "Instruction could not be interpreted")
                 (begin
                   (pp (append (list *mnemonic*) *tokens*))
+                  (println "Location: " (number->string *location-counter* #x10))
+                  (set! *location-counter* (+ *location-counter* 1))
                   (println "Opcode: " (number->string *opcode* #x10))
                   (if *operand*
-                      (println "Operand: " (number->string *operand* #x10)))
+                      (begin
+                        (set! *location-counter* (+ *location-counter* (cadr *operand*)))
+                        (println "Operand: " (number->string (car *operand*) #x10))))
                   (println))))))))
+                 
 
 (define char-digit?
   (lambda (c)
@@ -183,12 +189,12 @@
 
               (if (< i length)
                   (loop i (string-ref str i))
-                  (let ((bits (* (/ (+ length (modulo length 2)) 2) 8)))
-                    (list value bits))))
+                  (let ((bytes (/ (+ length (modulo length 2)) 2)))
+                    (list value bytes))))
             
             (raise-error "Invalid hex character"))))))
 
-(assemble "adc #$FD")
+(assemble "adc #$FE")
 (assemble "lda $FF00")
 (assemble "lda $10,x")
 (assemble "lda $AF12,y")
