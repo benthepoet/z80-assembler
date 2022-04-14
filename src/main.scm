@@ -194,6 +194,14 @@
             
             (raise-error "Invalid hex character"))))))
 
+(define hex-get-bytes
+  (lambda (h)
+    (let loop ((i 1))
+      (if (< h (expt 2 (* i 8)))
+          i
+          (loop (+ i 1))))))
+  
+(pp (hex-get-bytes 256))
 (assemble "adc #$FE")
 (assemble "lda $FF00")
 (assemble "lda $10,x")
