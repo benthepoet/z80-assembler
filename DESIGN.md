@@ -1,5 +1,8 @@
 Tokens
 
+* org
+* label
+* constant
 * mnemonic
 * d8 (8-bit literal)
 * a8 (8-bit address)
@@ -7,15 +10,16 @@ Tokens
 * left/right paren
 * register
 
-CPY
+```assembly
 
-* d8
-* a8
-* a16
+:default #$FF
 
-DEC
+.start
+    lda #$00
+    ldx :default
+.loop
+    dex
+    bne .loop
+    beq .start
 
-* a8
-* a8 register
-* a16
-* a16 register
+```
