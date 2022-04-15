@@ -18,6 +18,7 @@
 (define *line-buffer* +empty-string+)
 (define *line-cursor* 0)
 (define *location-counter* 0)
+
 (define *symbols* '())
 
 (define *mnemonic* +empty-string+)
@@ -28,6 +29,20 @@
 (define string-empty?
   (lambda (str)
     (string=? str +empty-string+))) 
+
+(define read-constant
+  (lambda ()
+    (let ((word (read-word)))
+      (cond
+       ((string-match? ':begins word "#$")
+        (let ((hex (hex->number (substring word 2 (string-length word)))))
+          (list (string->symbol (string-append ":d" (number->string (* (cadr hex) 8)))) (car hex))))
+
+       ((string-match? ':begins word "$")
+        (let ((hex (hex->number (substring word 1 (string-length word)))))
+          (list (string->symbol (string-append ":a" (number->string (* (cadr hex) 8)))) (car hex))))
+
+       (#t (raise "Invalid value for constant"))))))
 
 (define read-word
   (lambda ()
@@ -52,8 +67,7 @@
 
 (define read-tokens
   (lambda ()
-    (let loop ((word (read-word))
-               (hex-type ":a"))
+    (let loop ((word (read-word)))
       (if (not (string-empty? word))
           (begin
 
@@ -70,19 +84,30 @@
              ((string=? word "y")
               (set! *tokens* (append *tokens* '(:y)))))
             
-            (if (char=? (string-ref word 0) #\#)
-                (loop (substring word 1 (string-length word)) ":d"))
+            (if (string-match? ':begins word "#$")
+                (let ((hex (hex->number (substring word 2 (string-length word)))))
+                  (set-operand! ":d" hex)))
 
-            (if (char=? (string-ref word 0) #\$)
-                (let* ((hex (hex->number (substring word 1 (string-length word))))
-                       (bits (* (cadr hex) 8)))
-                  (set! *operand* hex)
-                  (set! *tokens* (append *tokens*
-                                       (list (string->symbol
-                                              (string-append hex-type (number->string bits))))))))
-            (loop (read-word) ":a"))))))
+            (if (string-match? ':begins word "$")
+                (let ((hex (hex->number (substring word 1 (string-length word)))))
+                  (set-operand! ":a" hex)))
+            
+            (loop (read-word)))))))
 
-(define store-label
+(define set-operand!
+  (lambda (type hex)
+    (set! *operand* hex)
+    (set! *tokens*
+          (append *tokens*
+                  (list (string->symbol (string-append type (number->string (* (cadr hex) 8)))))))))
+
+(define store-constant!
+  (lambda (label pair)
+    (set! *symbols*
+          (append *symbols*
+                  (list label (car pair) (cadr pair))))))
+                   
+(define store-label!
   (lambda (label)
     (set! *symbols* (append *symbols* (list label ':a16 *location-counter*)))))
 
@@ -143,30 +168,37 @@
     (set! *opcode* #f)
 
     (let ((word (read-word)))
-      (if (and (not (string-empty? word))
-               (char=? (string-ref word (- (string-length word) 1)) #\:))
-          (begin
-            (store-label word)
-            (set! word (read-word))))
-      
       (if (not (string-empty? word))
-          (begin
-            (set! *mnemonic* word)
-            (read-tokens)
-            (find-opcode)
-            (if (not *opcode*)
-                (raise-error "Instruction could not be interpreted")
+          (let ((k (string-ref word (- (string-length word) 1))))
+            (if (char=? k #\=)
+                (let ((hex (read-constant)))
+                  (pp hex)
+                  (store-constant! word hex)
+                  (println "Constant: " (cadr hex))
+                  (println))
                 (begin
-                  (pp (append (list *mnemonic*) *tokens*))
-                  (println "Location: " (number->string *location-counter* #x10))
-                  (set! *location-counter* (+ *location-counter* 1))
-                  (println "Opcode: " (number->string *opcode* #x10))
-                  (if *operand*
+                  (if (char=? k #\:)
                       (begin
-                        (set! *location-counter* (+ *location-counter* (cadr *operand*)))
-                        (println "Operand: " (number->string (car *operand*) #x10))))
-                  (println))))))))
-                 
+                          (store-label! word)
+                          (set! word (read-word))))
+
+                  (if (not (string-empty? word))
+                      (begin
+                        (set! *mnemonic* word)
+                        (read-tokens)
+                        (find-opcode)
+                        (if (not *opcode*)
+                            (raise-error "Instruction could not be interpreted")
+                            (begin
+                              (pp (append (list *mnemonic*) *tokens*))
+                              (println "Location: " (number->string *location-counter* #x10))
+                              (set! *location-counter* (+ *location-counter* 1))
+                              (println "Opcode: " (number->string *opcode* #x10))
+                              (if *operand*
+                                  (begin
+                                    (set! *location-counter* (+ *location-counter* (cadr *operand*)))
+                                    (println "Operand: " (number->string (car *operand*) #x10))))
+                              (println))))))))))))
 
 (define char-digit?
   (lambda (c)
@@ -207,13 +239,19 @@
             
             (raise-error "Invalid hex character"))))))
 
-(define hex-get-bytes
-  (lambda (h)
-    (let loop ((i 1))
-      (if (< h (expt 2 (* i 8)))
-          i
-          (loop (+ i 1))))))
-  
+(define string-match?
+  (lambda (type str p)
+    (let ((sl (string-length str))
+          (pl (string-length p)))
+      (if (> pl sl)
+          #f
+          (case type
+            ((:begins) (string=? p (substring str 0 pl)))
+            ((:ends) (string=? p (substring str (- sl pl) sl)))
+            (else (raise "Unrecognized match type")))))))
+
+(assemble "value:= #$10")
+(assemble "addr:= $30FB")
 (assemble "adc #$FE")
 (assemble "lda $FF00")
 (assemble "loop: lda $10,x")

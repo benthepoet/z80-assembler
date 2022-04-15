@@ -1,4 +1,4 @@
-    default= #$ff
+default:= #$ff
 
 start:
     lda #$00
