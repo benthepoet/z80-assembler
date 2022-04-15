@@ -82,26 +82,22 @@
       (if (not (string-empty? word))
           (begin
 
-            (cond
-             ((string=? word "(")
-              (set! *tokens* (append *tokens* '(:lp))))
+            (let ((sp (cond
+                       ((string=? word "(") '(:lp))
+                       ((string=? word ")") '(:rp))
+                       ((string=? word "x") '(:x))
+                       ((string=? word "y") '(:y))
+                       (else #f))))
+              (if sp
+                  (set! *tokens* (append *tokens* sp))
+                  (cond
+                    ((string-match? ':begins word "#$")
+                     (let ((hex (hex->number (substring word 2 (string-length word)))))
+                       (set-operand! ":d" hex)))
 
-             ((string=? word ")")
-              (set! *tokens* (append *tokens* '(:rp))))
-            
-             ((string=? word "x")
-              (set! *tokens* (append *tokens* '(:x))))
-
-             ((string=? word "y")
-              (set! *tokens* (append *tokens* '(:y)))))
-            
-            (if (string-match? ':begins word "#$")
-                (let ((hex (hex->number (substring word 2 (string-length word)))))
-                  (set-operand! ":d" hex)))
-
-            (if (string-match? ':begins word "$")
-                (let ((hex (hex->number (substring word 1 (string-length word)))))
-                  (set-operand! ":a" hex)))
+                    ((string-match? ':begins word "$")
+                     (let ((hex (hex->number (substring word 1 (string-length word)))))
+                       (set-operand! ":a" hex))))))
             
             (loop (read-word)))))))
 
