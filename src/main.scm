@@ -58,7 +58,7 @@
         (let ((hex (hex->number (substring word 1 (string-length word)))))
           (list (string->symbol (string-append ":a" (number->string (* (cadr hex) 8)))) (car hex))))
 
-       (#t (raise "Invalid value for constant"))))))
+       (else (raise "Invalid value for constant"))))))
 
 (define read-word
   (lambda ()
@@ -180,36 +180,35 @@
 
     (let ((word (read-word)))
       (if (not (string-empty? word))
-          (let ((k (string-ref word (- (string-length word) 1))))
-            (if (char=? k #\=)
-                (let ((hex (read-constant)))
-                  (pp hex)
-                  (store-constant! word hex)
-                  (println "Constant: " (cadr hex))
-                  (println))
-                (begin
-                  (if (char=? k #\:)
-                      (begin
-                          (store-label! word)
-                          (set! word (read-word))))
+          (if (string-match? ':ends word ":=")
+              (let ((hex (read-constant)))
+                 (pp hex)
+                 (store-constant! word hex)
+                 (println "Constant: " (cadr hex))
+                 (println))
+              (begin
+                (if (string-match? ':ends word ":")
+                    (begin
+                        (store-label! word)
+                        (set! word (read-word))))
 
-                  (if (not (string-empty? word))
-                      (begin
-                        (set! *mnemonic* word)
-                        (read-tokens)
-                        (find-opcode)
-                        (if (not *opcode*)
-                            (raise-error "Instruction could not be interpreted")
-                            (begin
-                              (pp (append (list *mnemonic*) *tokens*))
-                              (println "Location: " (number->string *location-counter* #x10))
-                              (set! *location-counter* (+ *location-counter* 1))
-                              (println "Opcode: " (number->string *opcode* #x10))
-                              (if *operand*
-                                  (begin
-                                    (set! *location-counter* (+ *location-counter* (cadr *operand*)))
-                                    (println "Operand: " (number->string (car *operand*) #x10))))
-                              (println))))))))))))
+                (if (not (string-empty? word))
+                    (begin
+                      (set! *mnemonic* word)
+                      (read-tokens)
+                      (find-opcode)
+                      (if (not *opcode*)
+                          (raise-error "Instruction could not be interpreted")
+                          (begin
+                            (pp (append (list *mnemonic*) *tokens*))
+                            (println "Location: " (number->string *location-counter* #x10))
+                            (set! *location-counter* (+ *location-counter* 1))
+                            (println "Opcode: " (number->string *opcode* #x10))
+                            (if *operand*
+                                (begin
+                                  (set! *location-counter* (+ *location-counter* (cadr *operand*)))
+                                  (println "Operand: " (number->string (car *operand*) #x10))))
+                            (println)))))))))))
 
 (define char-digit?
   (lambda (c)
@@ -261,7 +260,7 @@
             ((:ends) (string=? p (substring str (- sl pl) sl)))
             (else (raise "Unrecognized match type")))))))
 
-(assemble "value:= #$10")
+(assemble "value:= #$00")
 (assemble "addr:= $30FB")
 (assemble "adc #$FE")
 (assemble "lda $FF00")
