@@ -1,14 +1,25 @@
 (define mnemonics
   '(("adc"
-     ((:d8) #x69))
+     ((:d8) #x69)
+     ((:a8) #x65)
+     ((:a8 :x) #x75)
+     ((:a16) #x6D)
+     ((:a16 :x) #x7D)
+     ((:a16 :y) #x79)
+     ((:lp :a16 :x :rp) #x61)
+     ((:lp :a16 :rp :y) #x71))
+    ("inx"
+     (() #xE8))
+    ("iny"
+     (() #xC8)) 
     ("lda"
      ((:a8) #xA5)
      ((:a8 :x) #xB5)
      ((:a16) #xAD)
      ((:a16 :x) #xBD)
      ((:a16 :y) #xB9)
-     ((:lparen :a16 :x :rparen) #xA1)
-     ((:lparen :a16 :rparen :y) #xB1))
+     ((:lp :a16 :x :rp) #xA1)
+     ((:lp :a16 :rp :y) #xB1))
     ("pha"
      (() #x48))))
 
@@ -73,10 +84,10 @@
 
             (cond
              ((string=? word "(")
-              (set! *tokens* (append *tokens* '(:lparen))))
+              (set! *tokens* (append *tokens* '(:lp))))
 
              ((string=? word ")")
-              (set! *tokens* (append *tokens* '(:rparen))))
+              (set! *tokens* (append *tokens* '(:rp))))
             
              ((string=? word "x")
               (set! *tokens* (append *tokens* '(:x))))
