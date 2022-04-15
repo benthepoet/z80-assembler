@@ -59,22 +59,21 @@
   (lambda ()
     (let ((word +empty-string+)
           (length (string-length *line-buffer*)))
-      (let loop ((i *line-cursor*))
-        (if (> *line-cursor* length)
-            word
+      (let loop ((i *line-cursor*))        
+        (if (or (>= i length)
+                (char-whitespace? (string-ref *line-buffer* i)))
             (begin
-              (if (or (= i length)
-                      (char-whitespace? (string-ref *line-buffer* i)))
+              (if (> (- i *line-cursor*) 0)
                   (begin
-                    (if (> (- i *line-cursor*) 0)
-                        (begin
-                          (set! word (substring *line-buffer* *line-cursor* i))
-                          (set! *line-cursor* i)))
-                    (set! *line-cursor* (+ *line-cursor* 1))))
-              (if (and (< i length)
-                       (string-empty? word))
-                  (loop (+ i 1))
-                  word)))))))
+                    (set! word (substring *line-buffer* *line-cursor* i))
+                    (set! *line-cursor* i)))
+              (set! *line-cursor* (+ *line-cursor* 1))))
+
+        (if (not (string-empty? word))
+            word
+            (if (<= i length)
+                (loop (+ i 1))
+                word))))))
 
 (define read-tokens
   (lambda ()
