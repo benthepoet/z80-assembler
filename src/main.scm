@@ -144,7 +144,7 @@
 
     (let ((word (read-word)))
       (if (and (not (string-empty? word))
-               (char=? (string-ref word 0) #\.))
+               (char=? (string-ref word (- (string-length word) 1)) #\:))
           (begin
             (store-label word)
             (set! word (read-word))))
@@ -216,10 +216,10 @@
   
 (assemble "adc #$FE")
 (assemble "lda $FF00")
-(assemble ".loop lda $10,x")
+(assemble "loop: lda $10,x")
 (assemble "lda $AF12,y")
 (assemble "lda ($B23F,x)")
-(assemble ".wait")
+(assemble "wait:")
 (assemble "lda ($0020),y")
 (assemble "pha")
 
