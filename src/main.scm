@@ -41,6 +41,11 @@
   (lambda (str)
     (string=? str +empty-string+))) 
 
+(define-syntax inc!
+  (syntax-rules ()
+    ((inc! var)
+     (set! var (+ var 1)))))
+
 (define read-constant
   (lambda ()
     (let ((word (read-word)))
@@ -67,7 +72,7 @@
                   (begin
                     (set! word (substring *line-buffer* *line-cursor* i))
                     (set! *line-cursor* i)))
-              (set! *line-cursor* (+ *line-cursor* 1))))
+              (inc! *line-cursor*)))
 
         (if (not (string-empty? word))
             word
@@ -236,7 +241,7 @@
                   (set! nibble (- (char->integer c) 55)))
               
               (set! value (bitwise-ior (arithmetic-shift value 4) nibble))
-              (set! i (+ i 1))
+              (inc! i)
 
               (if (< i length)
                   (loop i (string-ref str i))
