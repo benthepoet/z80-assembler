@@ -83,13 +83,13 @@
           (begin
 
             (let ((sp (cond
-                       ((string=? word "(") '(:lp))
-                       ((string=? word ")") '(:rp))
-                       ((string=? word "x") '(:x))
-                       ((string=? word "y") '(:y))
+                       ((string=? word "(") ':lp)
+                       ((string=? word ")") ':rp)
+                       ((string=? word "x") ':x)
+                       ((string=? word "y") ':y)
                        (else #f))))
               (if sp
-                  (set! *tokens* (append *tokens* sp))
+                  (set! *tokens* (append *tokens* (list sp)))
                   (cond
                     ((string-match? ':begins word "#$")
                      (let ((hex (hex->number (substring word 2 (string-length word)))))
