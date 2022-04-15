@@ -14,9 +14,12 @@
 
 (define +empty-string+ "")
 
+(define *first-pass* #t)
 (define *line-buffer* +empty-string+)
 (define *line-cursor* 0)
 (define *location-counter* 0)
+(define *symbols* '())
+
 (define *mnemonic* +empty-string+)
 (define *tokens* '())
 (define *opcode* #f)
@@ -79,6 +82,10 @@
                                               (string-append hex-type (number->string bits))))))))
             (loop (read-word) ":a"))))))
 
+(define store-label
+  (lambda (label)
+    (set! *symbols* (append *symbols* (list label ':a16 *location-counter*)))))
+
 (define find-opcode
   (lambda ()
     (let loop ((table (car mnemonics))
@@ -135,10 +142,16 @@
     (set! *tokens* '())
     (set! *opcode* #f)
 
-    (let ((mnemonic (read-word)))
-      (if (not (string-empty? mnemonic))
+    (let ((word (read-word)))
+      (if (and (not (string-empty? word))
+               (char=? (string-ref word 0) #\.))
           (begin
-            (set! *mnemonic* mnemonic)
+            (store-label word)
+            (set! word (read-word))))
+      
+      (if (not (string-empty? word))
+          (begin
+            (set! *mnemonic* word)
             (read-tokens)
             (find-opcode)
             (if (not *opcode*)
@@ -201,11 +214,13 @@
           i
           (loop (+ i 1))))))
   
-(pp (hex-get-bytes 256))
 (assemble "adc #$FE")
 (assemble "lda $FF00")
-(assemble "lda $10,x")
+(assemble ".loop lda $10,x")
 (assemble "lda $AF12,y")
 (assemble "lda ($B23F,x)")
+(assemble ".wait")
 (assemble "lda ($0020),y")
 (assemble "pha")
+
+(pp *symbols*)
