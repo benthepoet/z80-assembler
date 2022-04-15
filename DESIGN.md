@@ -12,14 +12,17 @@ Tokens
 
 ```assembly
 
-:default #$FF
+default= #$FF ; Constant
 
-.start
+start: ; Label
     lda #$00
-    ldx :default
-.loop
+    ldx default
+:
     dex
-    bne .loop
-    beq .start
+    bne -: ; Reference back to nearest label
+    beq start
 
+.org $FFFC ; Organization directive
+    .w $00C0 ; Inject word 
+    
 ```
