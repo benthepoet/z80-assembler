@@ -14,15 +14,14 @@ Tokens
 
 default= #$FF ; Constant
 
-start: ; Label
+start: ; Named label
     lda #$00
     ldx default
-:
-    dex
-    bne -: ; Reference back to nearest label
-    beq start
+:   dex ; Unnamed label
+    bne -: ; Reverse reference to nearest unnamed label
+    beq start ; Branch to named label
 
-.org $FFFC ; Organization directive
-    .w $00C0 ; Inject word 
+.org $FFFC ; Indicate location in memory
+.w $00C0 ; Add word to memory 
     
 ```
