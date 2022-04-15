@@ -52,11 +52,11 @@
       (cond
        ((string-match? ':begins word "#$")
         (let ((hex (hex->number (substring word 2 (string-length word)))))
-          (list (string->symbol (string-append ":d" (number->string (* (cadr hex) 8)))) (car hex))))
+          (list (string->symbol (string-append ":d" (number->string (cadr hex)))) (car hex))))
 
        ((string-match? ':begins word "$")
         (let ((hex (hex->number (substring word 1 (string-length word)))))
-          (list (string->symbol (string-append ":a" (number->string (* (cadr hex) 8)))) (car hex))))
+          (list (string->symbol (string-append ":a" (number->string (cadr hex)))) (car hex))))
 
        (else (raise "Invalid value for constant"))))))
 
@@ -110,7 +110,7 @@
     (set! *operand* hex)
     (set! *tokens*
           (append *tokens*
-                  (list (string->symbol (string-append type (number->string (* (cadr hex) 8)))))))))
+                  (list (string->symbol (string-append type (number->string (cadr hex)))))))))
 
 (define store-constant!
   (lambda (label pair)
@@ -245,7 +245,7 @@
               (if (< i length)
                   (loop i (string-ref str i))
                   (let ((bytes (/ (+ length (modulo length 2)) 2)))
-                    (list value bytes))))
+                    (list value (* bytes 8)))))
             
             (raise-error "Invalid hex character"))))))
 
