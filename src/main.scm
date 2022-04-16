@@ -138,7 +138,7 @@
                         ((string-match? ':begins word "~")
                          (set-operand! ":a" '(#x00 8)))
                         (else
-                         (set-operand! ":r" '(#x0000 16)))))))))
+                         (set-operand! ":a" '(#x0000 16)))))))))
             
             (loop (read-word)))))))
 
@@ -148,13 +148,9 @@
       (set! *operand* (append (list op-type) hex))
       (append! *tokens* (list op-type)))))
 
-(define store-constant!
+(define store-symbol!
   (lambda (label hex)
     (append! *symbols* (list (list label hex)))))
-                   
-(define store-label!
-  (lambda (label)
-    (append! *symbols* (list (list label (list ':a16 *location-counter* 16))))))
 
 (define find-opcode
   (lambda ()
@@ -208,15 +204,17 @@
       (if (not (string-empty? word))
           (if (string-match? ':ends word ":=")
               (let ((hex (read-constant)))
-                 (pp hex)
-                 (store-constant! (substring word 0 (- (string-length word) 2)) hex)
+                 (store-symbol! (substring word 0 (- (string-length word) 2)) hex)
                  (println "Constant: " (cadr hex))
                  (println))
               (begin
                 (if (string-match? ':ends word ":")
                     (begin
-                        (store-label! (substring word 0 (- (string-length word) 1)))
-                        (set! word (read-word))))
+                      (store-symbol!
+                       (substring word 0 (- (string-length word) 1))
+                       (list ':16 *location-counter* 16))
+
+                      (set! word (read-word))))
 
                 (if (not (string-empty? word))
                     (begin
