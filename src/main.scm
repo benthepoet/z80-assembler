@@ -67,10 +67,8 @@
      (set! var (string-append var str)))))
 
 (define operand-type
-  (lambda (pre pair)
-    (append
-     (list (string->symbol (string-append pre (number->string (cadr pair)))))
-     pair)))
+  (lambda (pre hex)
+    (string->symbol (string-append pre (number->string (cadr hex)))))) 
 
 (define read-constant
   (lambda ()
@@ -78,11 +76,11 @@
       (cond
        ((string-match? ':begins word "#$")
         (let ((hex (hex->number (substring word 2 (string-length word)))))
-          (operand-type ":d" hex)))
+          (append (list (operand-type ":d" hex)) hex)))
 
        ((string-match? ':begins word "$")
         (let ((hex (hex->number (substring word 1 (string-length word)))))
-          (operand-type ":a" hex)))
+          (append (list (operand-type ":a" hex)) hex)))
 
        (else (raise "Invalid value for constant"))))))
 
@@ -123,11 +121,11 @@
                   (cond
                     ((string-match? ':begins word "#$")
                      (let ((hex (hex->number (substring word 2 (string-length word)))))
-                       (set-operand! ":d" hex)))
+                       (set-operand! (append (list (operand-type ":d" hex)) hex))))
 
                     ((string-match? ':begins word "$")
                      (let ((hex (hex->number (substring word 1 (string-length word)))))
-                       (set-operand! ":a" hex)))
+                       (set-operand! (append (list (operand-type ":a" hex)) hex))))
 
                     (else
                      (let ((symbol (assoc word *symbols*)))
@@ -136,17 +134,16 @@
                          (set! *operand* (cadr symbol))
                          (append! *tokens* (list (car (cadr symbol)))))
                         ((string-match? ':begins word "~")
-                         (set-operand! ":a" '(#x00 8)))
+                         (set-operand! '(:a8 #x00 8)))
                         (else
-                         (set-operand! ":a" '(#x0000 16)))))))))
+                         (set-operand! '(:a16 #x0000 16)))))))))
             
             (loop (read-word)))))))
 
 (define set-operand!
-  (lambda (type hex)
-    (let ((op-type (car (operand-type type hex))))
-      (set! *operand* (append (list op-type) hex))
-      (append! *tokens* (list op-type)))))
+  (lambda (hex)
+    (set! *operand* hex)
+    (append! *tokens* (list (car hex)))))
 
 (define store-symbol!
   (lambda (label hex)
