@@ -46,17 +46,26 @@
     ((inc! var)
      (set! var (+ var 1)))))
 
+(define-syntax set-append!
+  (syntax-rules ()
+    ((set-append! var str)
+     (set! var (string-append var str)))))
+
+(define operand-type
+  (lambda (pre pair)
+    (list (string->symbol (string-append pre (number->string (cadr pair)))) (car pair))))
+
 (define read-constant
   (lambda ()
     (let ((word (read-word)))
       (cond
        ((string-match? ':begins word "#$")
         (let ((hex (hex->number (substring word 2 (string-length word)))))
-          (list (string->symbol (string-append ":d" (number->string (cadr hex)))) (car hex))))
+          (operand-type ":d" hex)))
 
        ((string-match? ':begins word "$")
         (let ((hex (hex->number (substring word 1 (string-length word)))))
-          (list (string->symbol (string-append ":a" (number->string (cadr hex)))) (car hex))))
+          (operand-type ":a" hex)))
 
        (else (raise "Invalid value for constant"))))))
 
@@ -110,7 +119,7 @@
     (set! *operand* hex)
     (set! *tokens*
           (append *tokens*
-                  (list (string->symbol (string-append type (number->string (cadr hex)))))))))
+                  (list (car (operand-type type hex)))))))
 
 (define store-constant!
   (lambda (label pair)
@@ -145,23 +154,18 @@
 (define load-line-buffer
   (lambda (line)
     (let loop ((i 0)
-               (l (string-length line))
-               (s +empty-string+)
-               (lc #\space))
+               (c (string-ref line 0)))
+         (cond
+          ((char=? c #\,) (set-append! *line-buffer* " "))
+          ((char=? c #\() (set-append! *line-buffer* " ( "))
+          ((char=? c #\)) (set-append! *line-buffer* " ) "))
+          (#t
+           (set-append! *line-buffer* (string c))))
 
-      (if (< i l)
-          
-          (let ((c (string-ref line i)))
-           (cond
-            ((char=? c #\,) (set! s (string-append s " ")))
-            ((char=? c #\() (set! s (string-append s " ( ")))
-            ((char=? c #\)) (set! s (string-append s " ) ")))
-            ((not (and (char=? c #\space) (char=? lc c))) (set! s (string-append s (string c)))))
-           (loop (+ i 1) l s c))
-          
-          (begin
-            (pp s)
-            (set! *line-buffer* s))))))
+         (if (< i (- (string-length line) 1))
+             (loop (+ i 1) (string-ref line (+ i 1)))))
+      
+    (pp *line-buffer*)))
 
 (define raise-error
   (lambda (error)
@@ -169,7 +173,8 @@
 
 (define assemble
   (lambda (line)
-    
+
+    (set! *line-buffer* +empty-string+)
     (load-line-buffer line)
     
     (set! *line-cursor* 0)
@@ -206,7 +211,7 @@
                             (println "Opcode: " (number->string *opcode* #x10))
                             (if *operand*
                                 (begin
-                                  (set! *location-counter* (+ *location-counter* (cadr *operand*)))
+                                  (set! *location-counter* (+ *location-counter* (/ (cadr *operand*) 8)))
                                   (println "Operand: " (number->string (car *operand*) #x10))))
                             (println)))))))))))
 
