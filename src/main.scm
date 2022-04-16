@@ -1,4 +1,4 @@
-(define mnemonics
+(define opcodes
   '(("adc"
      ((#x69 (:d8))
       (#x65 (:a8))
@@ -150,11 +150,11 @@
 
 (define find-opcode
   (lambda ()
-    (let ((patterns (assoc *mnemonic* mnemonics)))
-       (if (pair? patterns)   
+    (let ((table (assoc *mnemonic* opcodes)))
+       (if (pair? table)   
           (begin
-            (let loop ((pattern (car (cadr patterns)))
-                       (patterns-tail (cdr (cadr patterns))))
+            (let loop ((pattern (car (cadr table)))
+                       (patterns-tail (cdr (cadr table))))
               (let ((opcode (car pattern))
                     (tokens (cadr pattern)))
                 (if (equal? tokens *tokens*)
