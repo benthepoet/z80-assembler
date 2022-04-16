@@ -56,7 +56,12 @@
     ((inc! var)
      (set! var (+ var 1)))))
 
-(define-syntax set-append!
+(define-syntax append!
+  (syntax-rules ()
+    ((append! var list)
+     (set! var (append var list)))))
+
+(define-syntax string-append!
   (syntax-rules ()
     ((set-append! var str)
      (set! var (string-append var str)))))
@@ -114,7 +119,7 @@
                        ((string=? word "y") ':y)
                        (else #f))))
               (if sp
-                  (set! *tokens* (append *tokens* (list sp)))
+                  (append! *tokens* (list sp))
                   (cond
                     ((string-match? ':begins word "#$")
                      (let ((hex (hex->number (substring word 2 (string-length word)))))
@@ -129,7 +134,7 @@
                        (cond
                         ((pair? symbol)
                          (set! *operand* (cadr symbol))
-                         (set! *tokens* (append *tokens* (list (car (cadr symbol))))))
+                         (append! *tokens* (list (car (cadr symbol)))))
                         ((string-match? ':begins word "~")
                          (set-operand! ":a" '(#x00 8)))
                         (else
@@ -141,17 +146,15 @@
   (lambda (type hex)
     (let ((op-type (car (operand-type type hex))))
       (set! *operand* (append (list op-type) hex))
-      (set! *tokens*
-             (append *tokens*
-                     (list op-type))))))
+      (append! *tokens* (list op-type)))))
 
 (define store-constant!
   (lambda (label hex)
-    (set! *symbols* (append *symbols* (list (list label hex))))))
+    (append! *symbols* (list (list label hex)))))
                    
 (define store-label!
   (lambda (label)
-    (set! *symbols* (append *symbols* (list (list label (list ':a16 *location-counter* 16)))))))
+    (append! *symbols* (list (list label (list ':a16 *location-counter* 16))))))
 
 (define find-opcode
   (lambda ()
@@ -174,11 +177,11 @@
                (c (string-ref line 0))
                (last-c #\space))
          (cond
-          ((char=? c #\,) (set-append! *line-buffer* " "))
-          ((char=? c #\() (set-append! *line-buffer* " ( "))
-          ((char=? c #\)) (set-append! *line-buffer* " ) "))
+          ((char=? c #\,) (string-append! *line-buffer* " "))
+          ((char=? c #\() (string-append! *line-buffer* " ( "))
+          ((char=? c #\)) (string-append! *line-buffer* " ) "))
           ((not (and (char-whitespace? c) (char-whitespace? last-c)))
-           (set-append! *line-buffer* (string c))))
+           (string-append! *line-buffer* (string c))))
 
          (if (< i (- (string-length line) 1))
              (loop (+ i 1) (string-ref line (+ i 1)) c)))
