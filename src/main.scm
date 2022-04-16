@@ -28,7 +28,8 @@
       (#xA1 (:lp :a16 :x :rp))
       (#xB1 (:lp :a16 :rp :y))))
     ("ldx"
-     ((#xAE (:a16))))
+     ((#xA2 (:d8))
+      (#xAE (:a16))))
     ("pha"
      ((#x48 ())))))
 
@@ -125,11 +126,12 @@
                      (let ((symbol (assoc word *symbols*)))
                        (cond
                         ((pair? symbol)
-                         (set-operand! (car symbol) (cadr symbol)))
+                         (set! *operand* (cadr symbol))
+                         (set! *tokens* (append *tokens* (list (car (cadr symbol))))))
                         ((string-match? ':begins word "~")
                          (set-operand! ":a" '(#x00 8)))
                         (else
-                         (set-operand! ":a" '(#x0000 16)))))))))
+                         (set-operand! ":r" '(#x0000 16)))))))))
             
             (loop (read-word)))))))
 
@@ -186,7 +188,7 @@
 
 (define assemble
   (lambda (line)
-
+    
     (set! *line-buffer* +empty-string+)
     (load-line-buffer line)
     
@@ -201,19 +203,20 @@
           (if (string-match? ':ends word ":=")
               (let ((hex (read-constant)))
                  (pp hex)
-                 (store-constant! word hex)
+                 (store-constant! (substring word 0 (- (string-length word) 2)) hex)
                  (println "Constant: " (cadr hex))
                  (println))
               (begin
                 (if (string-match? ':ends word ":")
                     (begin
-                        (store-label! word)
+                        (store-label! (substring word 0 (- (string-length word) 1)))
                         (set! word (read-word))))
 
                 (if (not (string-empty? word))
                     (begin
                       (set! *mnemonic* word)
                       (read-tokens)
+                      (pp *tokens*)
                       (find-opcode)
                       (if (not *opcode*)
                           (raise-error "Instruction could not be interpreted")
