@@ -1,37 +1,4 @@
-(define opcodes
-  '(("adc"
-     ((#x69 (:d8))
-      (#x65 (:a8))
-      (#x75 (:a8 :x))
-      (#x6D (:a16))
-      (#x7D (:a16 :x))
-      (#x79 (:a16 :y))
-      (#x61 (:lp :a16 :x :rp))
-      (#x71 (:lp :a16 :rp :y))))
-    ("beq"
-     ((#xF0 (:a8))))
-    ("bne"
-     ((#xD0 (:a8))))
-    ("dex"
-     ((#xCA ())))
-    ("inx"
-     ((#xE8 ())))
-    ("iny"
-     ((#xC8 ()))) 
-    ("lda"
-     ((#xA9 (:d8))
-      (#xA5 (:a8))
-      (#xB5 (:a8 :x))
-      (#xAD (:a16))
-      (#xBD (:a16 :x))
-      (#xB9 (:a16 :y))
-      (#xA1 (:lp :a16 :x :rp))
-      (#xB1 (:lp :a16 :rp :y))))
-    ("ldx"
-     ((#xA2 (:d8))
-      (#xAE (:a16))))
-    ("pha"
-     ((#x48 ())))))
+(include "opcodes.scm")
 
 (define +empty-string+ "")
 
@@ -151,7 +118,7 @@
 
 (define find-opcode
   (lambda ()
-    (let ((table (assoc *mnemonic* opcodes)))
+    (let ((table (assoc *mnemonic* *opcodes*)))
        (if (pair? table)   
           (begin
             (let loop ((pattern (car (cadr table)))
@@ -269,7 +236,7 @@
               (if (< i length)
                   (loop i (string-ref str i))
                   (let ((bytes (/ (+ length (modulo length 2)) 2)))
-                    (list value (* bytes 8)))))
+                    (list value (arithmetic-shift bytes 3)))))
             
             (raise-error "Invalid hex character"))))))
 
@@ -289,13 +256,12 @@
             (else (raise "Unrecognized match type")))))))
 
 (assemble "default:= #$FF")
-(assemble "start:")
-(assemble "    lda #$00")
-(assemble "    ldx default")
+(assemble "start:  nop")
+(assemble "        lda #$00")
+(assemble "        ldx default")
 (assemble "l1:")
-(assemble "    dex")
-(assemble "    bne ~l1")
-(assemble "    beq ~start")
-(assemble "lda $00 x")
+(assemble "        dex")
+(assemble "        bne ~l1")
+(assemble "        jmp start")
 
 (pp *symbols*)
