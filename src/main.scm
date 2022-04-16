@@ -63,7 +63,9 @@
 
 (define operand-type
   (lambda (pre pair)
-    (list (string->symbol (string-append pre (number->string (cadr pair)))) (car pair))))
+    (append
+     (list (string->symbol (string-append pre (number->string (cadr pair)))))
+     pair)))
 
 (define read-constant
   (lambda ()
@@ -137,18 +139,19 @@
 
 (define set-operand!
   (lambda (type hex)
-    (set! *operand* hex)
-    (set! *tokens*
-          (append *tokens*
-                  (list (car (operand-type type hex)))))))
+    (let ((op-type (car (operand-type type hex))))
+      (set! *operand* (append (list op-type) hex))
+      (set! *tokens*
+             (append *tokens*
+                     (list op-type))))))
 
 (define store-constant!
-  (lambda (label pair)
-    (set! *symbols* (append *symbols* (list (list label pair))))))
+  (lambda (label hex)
+    (set! *symbols* (append *symbols* (list (list label hex))))))
                    
 (define store-label!
   (lambda (label)
-    (set! *symbols* (append *symbols* (list (list label (list ':a16 *location-counter*)))))))
+    (set! *symbols* (append *symbols* (list (list label (list ':a16 *location-counter* 16)))))))
 
 (define find-opcode
   (lambda ()
@@ -227,8 +230,8 @@
                             (println "Opcode: " (number->string *opcode* #x10))
                             (if *operand*
                                 (begin
-                                  (set! *location-counter* (+ *location-counter* (/ (cadr *operand*) 8)))
-                                  (println "Operand: " (number->string (car *operand*) #x10))))
+                                  (set! *location-counter* (+ *location-counter* (/ (caddr *operand*) 8)))
+                                  (println "Operand: " (number->string (cadr *operand*) #x10))))
                             (println)))))))))))
 
 (define char-digit?
