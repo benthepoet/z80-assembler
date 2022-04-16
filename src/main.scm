@@ -1,27 +1,36 @@
 (define mnemonics
   '(("adc"
-     ((:d8) #x69)
-     ((:a8) #x65)
-     ((:a8 :x) #x75)
-     ((:a16) #x6D)
-     ((:a16 :x) #x7D)
-     ((:a16 :y) #x79)
-     ((:lp :a16 :x :rp) #x61)
-     ((:lp :a16 :rp :y) #x71))
+     ((#x69 (:d8))
+      (#x65 (:a8))
+      (#x75 (:a8 :x))
+      (#x6D (:a16))
+      (#x7D (:a16 :x))
+      (#x79 (:a16 :y))
+      (#x61 (:lp :a16 :x :rp))
+      (#x71 (:lp :a16 :rp :y))))
+    ("beq"
+     ((#xF0 (:a8))))
+    ("bne"
+     ((#xD0 (:a8))))
+    ("dex"
+     ((#xCA ())))
     ("inx"
-     (() #xE8))
+     ((#xE8 ())))
     ("iny"
-     (() #xC8)) 
+     ((#xC8 ()))) 
     ("lda"
-     ((:a8) #xA5)
-     ((:a8 :x) #xB5)
-     ((:a16) #xAD)
-     ((:a16 :x) #xBD)
-     ((:a16 :y) #xB9)
-     ((:lp :a16 :x :rp) #xA1)
-     ((:lp :a16 :rp :y) #xB1))
+     ((#xA9 (:d8))
+      (#xA5 (:a8))
+      (#xB5 (:a8 :x))
+      (#xAD (:a16))
+      (#xBD (:a16 :x))
+      (#xB9 (:a16 :y))
+      (#xA1 (:lp :a16 :x :rp))
+      (#xB1 (:lp :a16 :rp :y))))
+    ("ldx"
+     ((#xAE (:a16))))
     ("pha"
-     (() #x48))))
+     ((#x48 ())))))
 
 (define +empty-string+ "")
 
@@ -110,7 +119,17 @@
 
                     ((string-match? ':begins word "$")
                      (let ((hex (hex->number (substring word 1 (string-length word)))))
-                       (set-operand! ":a" hex))))))
+                       (set-operand! ":a" hex)))
+
+                    (else
+                     (let ((symbol (assoc word *symbols*)))
+                       (cond
+                        ((pair? symbol)
+                         (set-operand! (car symbol) (cadr symbol)))
+                        ((string-match? ':begins word "~")
+                         (set-operand! ":a" '(#x00 8)))
+                        (else
+                         (set-operand! ":a" '(#x0000 16)))))))))
             
             (loop (read-word)))))))
 
@@ -123,33 +142,26 @@
 
 (define store-constant!
   (lambda (label pair)
-    (set! *symbols*
-          (append *symbols*
-                  (list label (car pair) (cadr pair))))))
+    (set! *symbols* (append *symbols* (list (list label pair))))))
                    
 (define store-label!
   (lambda (label)
-    (set! *symbols* (append *symbols* (list label ':a16 *location-counter*)))))
+    (set! *symbols* (append *symbols* (list (list label (list ':a16 *location-counter*)))))))
 
 (define find-opcode
   (lambda ()
-    (let loop ((table (car mnemonics))
-               (tables-tail (cdr mnemonics)))
-      (let ((mnemonic (car table))
-            (patterns (cdr table)))
-        (if (string=? mnemonic *mnemonic*)
-            (begin
-              (let p-loop ((pattern (car patterns))
-                           (patterns-tail (cdr patterns)))
-                (let ((tokens (car pattern))
-                      (opcode (cadr pattern)))
-                  (if (equal? tokens *tokens*)
-                      (set! *opcode* opcode)
-                      (if (pair? patterns-tail)
-                          (p-loop (car patterns-tail) (cdr patterns-tail)))))))))
-                     
-      (if (pair? tables-tail)
-          (loop (car tables-tail) (cdr tables-tail))))))
+    (let ((patterns (assoc *mnemonic* mnemonics)))
+       (if (pair? patterns)   
+          (begin
+            (let loop ((pattern (car (cadr patterns)))
+                       (patterns-tail (cdr (cadr patterns))))
+              (let ((opcode (car pattern))
+                    (tokens (cadr pattern)))
+                (if (equal? tokens *tokens*)
+                    (set! *opcode* opcode)
+                    (if (pair? patterns-tail)
+                        (loop (car patterns-tail) (cdr patterns-tail)))))))
+          (raise "Unable to find opcode for mnemonic")))))                
 
 (define load-line-buffer
   (lambda (line)
@@ -266,15 +278,13 @@
             ((:ends) (string=? p (substring str (- sl pl) sl)))
             (else (raise "Unrecognized match type")))))))
 
-(assemble "value:= #$00")
-(assemble "addr:= $30FB")
-(assemble "adc #$FE")
-(assemble "lda $FF00")
-(assemble "loop: lda $10,x")
-(assemble "lda $AF12,y")
-(assemble "lda ($B23F,x)")
-(assemble "wait:")
-(assemble "lda ($0020),y")
-(assemble "pha")
+(assemble "default:= #$FF")
+(assemble "start:")
+(assemble "    lda #$00")
+(assemble "    ldx default")
+(assemble "l1:")
+(assemble "    dex")
+(assemble "    bne ~l1")
+(assemble "    beq ~start")
 
 (pp *symbols*)
