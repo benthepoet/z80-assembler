@@ -56,10 +56,10 @@
     ((inc! var)
      (set! var (+ var 1)))))
 
-(define-syntax append!
+(define-syntax prepend!
   (syntax-rules ()
-    ((append! var list)
-     (set! var (append var list)))))
+    ((prepend! val var)
+     (set! var (cons val var)))))
 
 (define-syntax string-append!
   (syntax-rules ()
@@ -67,8 +67,8 @@
      (set! var (string-append var str)))))
 
 (define operand-type
-  (lambda (pre hex)
-    (string->symbol (string-append pre (number->string (cadr hex)))))) 
+  (lambda (class hex)
+    (string->symbol (string-append class (number->string (cadr hex)))))) 
 
 (define read-constant
   (lambda ()
@@ -117,7 +117,7 @@
                        ((string=? word "y") ':y)
                        (else #f))))
               (if sp
-                  (append! *tokens* (list sp))
+                  (prepend! sp *tokens*)
                   (cond
                     ((string-match? ':begins word "#$")
                      (let ((hex (hex->number (substring word 2 (string-length word)))))
@@ -132,7 +132,7 @@
                        (cond
                         ((pair? symbol)
                          (set! *operand* (cadr symbol))
-                         (append! *tokens* (list (car (cadr symbol)))))
+                         (prepend! (car (cadr symbol)) *tokens*))
                         ((string-match? ':begins word "~")
                          (set-operand! '(:a8 #x00 8)))
                         (else
@@ -143,11 +143,11 @@
 (define set-operand!
   (lambda (hex)
     (set! *operand* hex)
-    (append! *tokens* (list (car hex)))))
+    (prepend! (car hex) *tokens*)))
 
 (define store-symbol!
   (lambda (label hex)
-    (append! *symbols* (list (list label hex)))))
+    (prepend! (list label hex) *symbols*)))
 
 (define find-opcode
   (lambda ()
@@ -158,7 +158,7 @@
                        (patterns-tail (cdr (cadr table))))
               (let ((opcode (car pattern))
                     (tokens (cadr pattern)))
-                (if (equal? tokens *tokens*)
+                (if (equal? tokens (reverse *tokens*))
                     (set! *opcode* opcode)
                     (if (pair? patterns-tail)
                         (loop (car patterns-tail) (cdr patterns-tail)))))))
@@ -202,22 +202,24 @@
           (if (string-match? ':ends word ":=")
               (let ((hex (read-constant)))
                  (store-symbol! (substring word 0 (- (string-length word) 2)) hex)
-                 (println "Constant: " (cadr hex))
+                 (println "Constant: " (number->string (cadr hex) #x10))
                  (println))
               (begin
                 (if (string-match? ':ends word ":")
                     (begin
                       (store-symbol!
                        (substring word 0 (- (string-length word) 1))
-                       (list ':16 *location-counter* 16))
+                       (list ':a16 *location-counter* 16))
 
+                      (println "Label: " (number->string *location-counter* #x10))
+                      (println)
+                      
                       (set! word (read-word))))
 
                 (if (not (string-empty? word))
                     (begin
                       (set! *mnemonic* word)
                       (read-tokens)
-                      (pp *tokens*)
                       (find-opcode)
                       (if (not *opcode*)
                           (raise-error "Instruction could not be interpreted")
@@ -290,5 +292,6 @@
 (assemble "    dex")
 (assemble "    bne ~l1")
 (assemble "    beq ~start")
+(assemble "lda $00 x")
 
 (pp *symbols*)
