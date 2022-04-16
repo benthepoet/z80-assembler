@@ -154,16 +154,17 @@
 (define load-line-buffer
   (lambda (line)
     (let loop ((i 0)
-               (c (string-ref line 0)))
+               (c (string-ref line 0))
+               (last-c #\space))
          (cond
           ((char=? c #\,) (set-append! *line-buffer* " "))
           ((char=? c #\() (set-append! *line-buffer* " ( "))
           ((char=? c #\)) (set-append! *line-buffer* " ) "))
-          (#t
+          ((not (and (char-whitespace? c) (char-whitespace? last-c)))
            (set-append! *line-buffer* (string c))))
 
          (if (< i (- (string-length line) 1))
-             (loop (+ i 1) (string-ref line (+ i 1)))))
+             (loop (+ i 1) (string-ref line (+ i 1)) c)))
       
     (pp *line-buffer*)))
 
