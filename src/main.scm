@@ -101,9 +101,9 @@
                         ((pair? symbol)
                          (set-operand! (cadr symbol)))
                         ((string-match? ':begins word "~")
-                         (set-operand! '(:a8 #x00 8)))
+                         (set-operand! '(:a8 #x00 #x08)))
                         (else
-                         (set-operand! '(:a16 #x0000 16)))))))))
+                         (set-operand! '(:a16 #x0000 #x10)))))))))
             
             (loop (read-word)))))))
 
@@ -120,15 +120,15 @@
   (lambda ()
     (let ((table (assoc *mnemonic* *opcodes*)))
        (if (pair? table)   
-          (begin
-            (let loop ((pattern (car (cadr table)))
-                       (patterns-tail (cdr (cadr table))))
-              (let ((opcode (car pattern))
-                    (tokens (cadr pattern)))
-                (if (equal? tokens (reverse *tokens*))
-                    (set! *opcode* opcode)
-                    (if (pair? patterns-tail)
-                        (loop (car patterns-tail) (cdr patterns-tail)))))))
+           (begin
+             (let loop ((pattern (car (cadr table)))
+                        (patterns-tail (cdr (cadr table))))
+               (let ((opcode (car pattern))
+                     (tokens (cadr pattern)))
+                 (if (equal? tokens (reverse *tokens*))
+                     (set! *opcode* opcode)
+                     (if (pair? patterns-tail)
+                         (loop (car patterns-tail) (cdr patterns-tail)))))))
           (raise "Unable to find opcode for mnemonic")))))                
 
 (define load-line-buffer
@@ -154,14 +154,15 @@
 
 (define assemble
   (lambda (line)
-    
+
+    (set! *line-cursor* 0)
     (set! *line-buffer* +empty-string+)
     (load-line-buffer line)
     
-    (set! *line-cursor* 0)
     (set! *mnemonic* +empty-string+)
-    (set! *operand* #f)
     (set! *tokens* '())
+    
+    (set! *operand* #f)
     (set! *opcode* #f)
 
     (let ((word (read-word)))
@@ -197,19 +198,17 @@
                             (println "Opcode: " (number->hex *opcode*))
                             (if *operand*
                                 (begin
-                                  (set! *location-counter* (+ *location-counter* (/ (caddr *operand*) 8)))
+                                  (set! *location-counter* (+ *location-counter* (/ (caddr *operand*) #x08)))
                                   (println "Operand: " (number->hex (cadr *operand*)))))
                             (println)))))))))))
 
 (define char-digit?
   (lambda (c)
-    (and (char>=? c #\0)
-         (char<=? c #\9))))
+    (and (char>=? c #\0) (char<=? c #\9))))
 
 (define char-hex-letter?
   (lambda (c)
-    (and (char>=? c #\A)
-         (char<=? c #\F))))
+    (and (char>=? c #\A) (char<=? c #\F))))
 
 (define hex->number
   (lambda (str)
