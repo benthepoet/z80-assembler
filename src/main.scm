@@ -35,15 +35,16 @@
 
 (define +empty-string+ "")
 
-(define *first-pass* #t)
+(define *output-mode* #f)
 (define *line-buffer* +empty-string+)
 (define *line-cursor* 0)
-(define *location-counter* 0)
 
+(define *location-counter* 0)
 (define *symbols* '())
 
 (define *mnemonic* +empty-string+)
 (define *tokens* '())
+
 (define *opcode* #f)
 (define *operand* #f)
 
@@ -131,8 +132,7 @@
                      (let ((symbol (assoc word *symbols*)))
                        (cond
                         ((pair? symbol)
-                         (set! *operand* (cadr symbol))
-                         (prepend! (car (cadr symbol)) *tokens*))
+                         (set-operand! (cadr symbol)))
                         ((string-match? ':begins word "~")
                          (set-operand! '(:a8 #x00 8)))
                         (else
@@ -202,7 +202,7 @@
           (if (string-match? ':ends word ":=")
               (let ((hex (read-constant)))
                  (store-symbol! (substring word 0 (- (string-length word) 2)) hex)
-                 (println "Constant: " (number->string (cadr hex) #x10))
+                 (println "Constant: " (number->hex (cadr hex)))
                  (println))
               (begin
                 (if (string-match? ':ends word ":")
@@ -211,7 +211,7 @@
                        (substring word 0 (- (string-length word) 1))
                        (list ':a16 *location-counter* 16))
 
-                      (println "Label: " (number->string *location-counter* #x10))
+                      (println "Label: " (number->hex *location-counter*))
                       (println)
                       
                       (set! word (read-word))))
@@ -225,13 +225,13 @@
                           (raise-error "Instruction could not be interpreted")
                           (begin
                             (pp (append (list *mnemonic*) *tokens*))
-                            (println "Location: " (number->string *location-counter* #x10))
+                            (println "Location: " (number->hex *location-counter*))
                             (set! *location-counter* (+ *location-counter* 1))
-                            (println "Opcode: " (number->string *opcode* #x10))
+                            (println "Opcode: " (number->hex *opcode*))
                             (if *operand*
                                 (begin
                                   (set! *location-counter* (+ *location-counter* (/ (caddr *operand*) 8)))
-                                  (println "Operand: " (number->string (cadr *operand*) #x10))))
+                                  (println "Operand: " (number->hex (cadr *operand*)))))
                             (println)))))))))))
 
 (define char-digit?
@@ -272,6 +272,10 @@
                     (list value (* bytes 8)))))
             
             (raise-error "Invalid hex character"))))))
+
+(define number->hex
+  (lambda (num)
+    (number->string num #x10)))
 
 (define string-match?
   (lambda (type str p)
