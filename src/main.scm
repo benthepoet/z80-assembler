@@ -14,6 +14,7 @@
 
 (define *opcode* #f)
 (define *operand* #f)
+(define *operator* #f)
 
 (define string-empty?
   (lambda (str)
@@ -40,17 +41,10 @@
 
 (define read-constant
   (lambda ()
-    (let ((word (read-word)))
-      (cond
-       ((string-match? ':begins word "#$")
-        (let ((hex (hex->number (substring word 2 (string-length word)))))
-          (append (list (operand-type ":d" hex)) hex)))
-
-       ((string-match? ':begins word "$")
-        (let ((hex (hex->number (substring word 1 (string-length word)))))
-          (append (list (operand-type ":a" hex)) hex)))
-
-       (else (raise "Invalid value for constant"))))))
+    (let ((hex (read-hex (read-word))))
+      (if (pair? hex)
+          hex
+          (raise "Invalid value for constant")))))
 
 (define read-word
   (lambda ()
@@ -72,6 +66,19 @@
                 (loop (+ i 1))
                 word))))))
 
+(define read-hex
+  (lambda (word)
+    (cond
+     ((string-match? ':begins word "#$")
+      (let ((hex (hex->number (substring word 2 (string-length word)))))
+        (append (list (operand-type ":d" hex)) hex)))
+
+     ((string-match? ':begins word "$")
+      (let ((hex (hex->number (substring word 1 (string-length word)))))
+        (append (list (operand-type ":a" hex)) hex)))
+
+     (else '()))))
+
 (define read-tokens
   (lambda ()
     (let loop ((word (read-word)))
@@ -86,24 +93,21 @@
                        (else #f))))
               (if sp
                   (prepend! sp *tokens*)
-                  (cond
-                    ((string-match? ':begins word "#$")
-                     (let ((hex (hex->number (substring word 2 (string-length word)))))
-                       (set-operand! (append (list (operand-type ":d" hex)) hex))))
-
-                    ((string-match? ':begins word "$")
-                     (let ((hex (hex->number (substring word 1 (string-length word)))))
-                       (set-operand! (append (list (operand-type ":a" hex)) hex))))
-
-                    (else
-                     (let ((symbol (assoc word *symbols*)))
-                       (cond
-                        ((pair? symbol)
-                         (set-operand! (cadr symbol)))
-                        ((string-match? ':begins word "~")
-                         (set-operand! '(:a8 #x00 #x08)))
-                        (else
-                         (set-operand! '(:a16 #x0000 #x10)))))))))
+                  (if (string=? word "-")
+                      (set! *operator* ':-)
+                      (let ((hex (read-hex word)))
+                        (if (pair? hex)
+                            (if (equal? *operator* ':-)
+                                (pp (- (cadr *operand*) (cadr hex)))
+                                (set-operand! hex))
+                            (let ((symbol (assoc word *symbols*)))
+                              (cond
+                               ((pair? symbol)
+                                (set-operand! (cadr symbol)))
+                               ((string-match? ':begins word "~")
+                                (set-operand! '(:a8 #x00 #x08)))
+                               (else
+                                (set-operand! '(:a16 #x0000 #x10))))))))))
             
             (loop (read-word)))))))
 
@@ -164,6 +168,7 @@
     
     (set! *operand* #f)
     (set! *opcode* #f)
+    (set! *operator* #f)
 
     (let ((word (read-word)))
       (if (not (string-empty? word))
@@ -261,6 +266,6 @@
 (assemble "l1:")
 (assemble "        dex")
 (assemble "        bne ~l1")
-(assemble "        jmp start")
+(assemble "        jmp $0010 - $0002")
 
 (pp *symbols*)
