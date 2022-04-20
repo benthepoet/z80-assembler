@@ -1,5 +1,7 @@
-var s = 'lda $0030, x';
+var s = 'lda <$0030 $0400 ->, x';
 var c = 0;
+
+var num_stack = [];
 
 function read_word()
 {
@@ -18,6 +20,21 @@ function read_word()
     }
 
     return '';
+}
+
+function read()
+{
+    // read token
+    // if operator then evaluate number stack
+    // if comma 
+    
+    // read hex
+    // read label
+
+    // store numbers in a stack
+
+    // if operator is present apply to stack
+    // set operand to top of number stack
 }
 
 var a = read_word();
