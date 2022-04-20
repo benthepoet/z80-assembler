@@ -2,7 +2,11 @@
 
 (define +empty-string+ "")
 
+(define *expression-mode* #f)
+(define *expression-stack* '())
+
 (define *output-mode* #f)
+
 (define *line-buffer* +empty-string+)
 (define *line-cursor* 0)
 
@@ -14,7 +18,6 @@
 
 (define *opcode* #f)
 (define *operand* #f)
-(define *operator* #f)
 
 (define string-empty?
   (lambda (str)
@@ -79,35 +82,43 @@
 
      (else '()))))
 
+(define read-hex-or-label
+  (lambda (word)
+    (let ((hex (read-hex word)))
+         (if (pair? hex)
+             hex
+             (let ((symbol (assoc word *symbols*)))
+               (cond
+                ((pair? symbol)
+                 (cadr symbol))
+                ((string-match? ':begins word "~")
+                 '(:a8 #x00 #x08))
+                (else
+                 '(:a16 #x0000 #x10))))))))
+ 
+
 (define read-tokens
   (lambda ()
     (let loop ((word (read-word)))
       (if (not (string-empty? word))
           (begin
 
-            (let ((sp (cond
-                       ((string=? word "(") ':lp)
-                       ((string=? word ")") ':rp)
-                       ((string=? word "x") ':x)
-                       ((string=? word "y") ':y)
-                       (else #f))))
-              (if sp
-                  (prepend! sp *tokens*)
-                  (if (string=? word "-")
-                      (set! *operator* ':-)
-                      (let ((hex (read-hex word)))
-                        (if (pair? hex)
-                            (if (equal? *operator* ':-)
-                                (pp (- (cadr *operand*) (cadr hex)))
-                                (set-operand! hex))
-                            (let ((symbol (assoc word *symbols*)))
-                              (cond
-                               ((pair? symbol)
-                                (set-operand! (cadr symbol)))
-                               ((string-match? ':begins word "~")
-                                (set-operand! '(:a8 #x00 #x08)))
-                               (else
-                                (set-operand! '(:a16 #x0000 #x10))))))))))
+            (if *expression-mode*
+            
+                (cond
+                 ((string=? word "-") (subtract))
+                 (else
+                  (let ((value (read-hex-or-label)))
+                    (prepend! value *expression-stack*))))
+            
+                (cond
+                 ((string=? word "/") (set! *expression-mode* (not *expression-mode*)))
+                 ((string=? word "(") (prepend! ':lp *tokens*))
+                 ((string=? word ")") (prepend! ':rp *tokens*))
+                 ((string=? word "x") (prepend! ':x *tokens*))
+                 ((string=? word "y") (prepend! ':y *tokens*))
+                 (else
+                  (set-operand! (read-hex-or-label)))))
             
             (loop (read-word)))))))
 
@@ -159,6 +170,9 @@
 (define assemble
   (lambda (line)
 
+    (set! *expression-mode* #f)
+    (set! *expression-stack* '())
+    
     (set! *line-cursor* 0)
     (set! *line-buffer* +empty-string+)
     (load-line-buffer line)
@@ -168,7 +182,6 @@
     
     (set! *operand* #f)
     (set! *opcode* #f)
-    (set! *operator* #f)
 
     (let ((word (read-word)))
       (if (not (string-empty? word))
