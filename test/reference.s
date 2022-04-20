@@ -8,7 +8,7 @@ l1:
     bne l1
     beq start
 end:
-    .w end - start
+    .w /end start -/
 
     .org $FFFC
     .w $00C0
