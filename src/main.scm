@@ -23,20 +23,14 @@
   (lambda (str)
     (string=? str +empty-string+))) 
 
-(define-syntax inc!
-  (syntax-rules ()
-    ((inc! var)
-     (set! var (+ var 1)))))
+(define-macro (inc! var)
+  `(set! ,var (+ ,var 1)))
 
-(define-syntax prepend!
-  (syntax-rules ()
-    ((prepend! val var)
-     (set! var (cons val var)))))
+(define-macro (prepend! val var)
+  `(set! ,var (cons ,val ,var)))
 
-(define-syntax string-append!
-  (syntax-rules ()
-    ((set-append! var str)
-     (set! var (string-append var str)))))
+(define-macro (string-append! var str)
+  `(set! ,var (string-append ,var ,str)))
 
 (define operand-type
   (lambda (class hex)
@@ -108,7 +102,7 @@
                 (cond
                  ((string=? word "-") (subtract))
                  (else
-                  (let ((value (read-hex-or-label)))
+                  (let ((value (read-hex-or-label word)))
                     (prepend! value *expression-stack*))))
             
                 (cond
@@ -118,7 +112,7 @@
                  ((string=? word "x") (prepend! ':x *tokens*))
                  ((string=? word "y") (prepend! ':y *tokens*))
                  (else
-                  (set-operand! (read-hex-or-label)))))
+                  (set-operand! (read-hex-or-label word)))))
             
             (loop (read-word)))))))
 
@@ -279,6 +273,6 @@
 (assemble "l1:")
 (assemble "        dex")
 (assemble "        bne ~l1")
-(assemble "        jmp $0010 - $0002")
+(assemble "        jmp $0010")
 
 (pp *symbols*)
