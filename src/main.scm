@@ -101,6 +101,7 @@
             
                 (cond
                  ((string=? word "-") (subtract))
+                 ((string=? word "/") (set! *expression-mode* (not *expression-mode*)))
                  (else
                   (let ((value (read-hex-or-label word)))
                     (prepend! value *expression-stack*))))
@@ -147,6 +148,7 @@
                (last-c #\space))
          (cond
           ((char=? c #\,) (string-append! *line-buffer* " "))
+          ((char=? c #\/) (string-append! *line-buffer* " / "))
           ((char=? c #\() (string-append! *line-buffer* " ( "))
           ((char=? c #\)) (string-append! *line-buffer* " ) "))
           ((not (and (char-whitespace? c) (char-whitespace? last-c)))
@@ -202,7 +204,11 @@
                       (read-tokens)
                       (find-opcode)
                       (if (not *opcode*)
-                          (raise-error "Instruction could not be interpreted")
+                          (begin
+                            (pp *tokens*)
+                            (pp *expression-mode*)
+                            (pp *expression-stack*)
+                            (raise-error "Instruction could not be interpreted"))
                           (begin
                             (pp (append (list *mnemonic*) *tokens*))
                             (println "Location: " (number->hex *location-counter*))
@@ -273,6 +279,7 @@
 (assemble "l1:")
 (assemble "        dex")
 (assemble "        bne ~l1")
-(assemble "        jmp $0010")
+(assemble "        jmp /$0010 $0020/ $0000")
 
 (pp *symbols*)
+(pp *expression-stack*)
