@@ -26,7 +26,13 @@
 (define-macro (inc! var)
   `(set! ,var (+ ,var 1)))
 
-(define-macro (prepend! val var)
+(define-macro (pop! var)
+  `(let ((head (car ,var))
+         (tail (cdr ,var)))
+     (set! ,var tail)
+     head))
+
+(define-macro (push! val var)
   `(set! ,var (cons ,val ,var)))
 
 (define-macro (string-append! var str)
@@ -100,18 +106,21 @@
             (if *expression-mode*
             
                 (cond
-                 ((string=? word "-") (subtract))
+                 ((string=? word "-")
+                  (let ((a (pop! *expression-stack*))
+                        (b (pop! *expression-stack*)))
+                    (push! (- (cadr a) (cadr b)) *expression-stack*)))
                  ((string=? word "/") (set! *expression-mode* (not *expression-mode*)))
                  (else
                   (let ((value (read-hex-or-label word)))
-                    (prepend! value *expression-stack*))))
+                    (push! value *expression-stack*))))
             
                 (cond
                  ((string=? word "/") (set! *expression-mode* (not *expression-mode*)))
-                 ((string=? word "(") (prepend! ':lp *tokens*))
-                 ((string=? word ")") (prepend! ':rp *tokens*))
-                 ((string=? word "x") (prepend! ':x *tokens*))
-                 ((string=? word "y") (prepend! ':y *tokens*))
+                 ((string=? word "(") (push! ':lp *tokens*))
+                 ((string=? word ")") (push! ':rp *tokens*))
+                 ((string=? word "x") (push! ':x *tokens*))
+                 ((string=? word "y") (push! ':y *tokens*))
                  (else
                   (set-operand! (read-hex-or-label word)))))
             
@@ -120,11 +129,11 @@
 (define set-operand!
   (lambda (hex)
     (set! *operand* hex)
-    (prepend! (car hex) *tokens*)))
+    (push! (car hex) *tokens*)))
 
 (define store-symbol!
   (lambda (label hex)
-    (prepend! (list label hex) *symbols*)))
+    (push! (list label hex) *symbols*)))
 
 (define find-opcode
   (lambda ()
@@ -279,7 +288,7 @@
 (assemble "l1:")
 (assemble "        dex")
 (assemble "        bne ~l1")
-(assemble "        jmp /$0010 $0020/ $0000")
+(assemble "        jmp /$0011 $00F3 -/ $0000")
 
 (pp *symbols*)
 (pp *expression-stack*)
