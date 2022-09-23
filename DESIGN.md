@@ -25,3 +25,13 @@ l1: dec b
     .w $00C0 ; Add word to memory 
     
 ```
+
+### Tables
+
+Mnemomic Table
+---------------
+| Length (1 byte) | Mnemonic (n bytes) | Pattern table address (2 bytes) |
+
+Pattern Table
+---------------
+| Length (1 byte) | Pattern (n bytes) | Opcode (2 bytes) | Function (1 byte) |
