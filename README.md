@@ -1,2 +1,2 @@
-# 6502-assembler
-A 6502 assembler written in Gambit Scheme.
+# Z80-assembler
+A Z80 assembler written in Gambit Scheme.
