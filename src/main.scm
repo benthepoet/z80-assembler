@@ -70,13 +70,9 @@
 (define read-hex
   (lambda (word)
     (cond
-     ((string-match? ':begins word "#$")
-      (let ((hex (hex->number (substring word 2 (string-length word)))))
-        (append (list (operand-type ":d" hex)) hex)))
-
      ((string-match? ':begins word "$")
       (let ((hex (hex->number (substring word 1 (string-length word)))))
-        (append (list (operand-type ":a" hex)) hex)))
+        (append (list (operand-type ":nn" hex)) hex)))
 
      (else '()))))
 
