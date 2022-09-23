@@ -34,4 +34,53 @@ Mnemomic Table
 
 Pattern Table
 ---------------
-| Length (1 byte) | Pattern (n bytes) | Opcode (2 bytes) | Function (1 byte) |
+| Pattern Length (1 byte) | Pattern (n bytes) | Opcode Length (1 byte) | Opcode (n bytes) | Function (1 byte) |
+
+**ADD** (40 bytes)
+| Pattern Length | Pattern | Opcode Length | Opcode | Function |
+| ------ | ------- | ------ | -------- | ------ |
+| 2 | Ar | 1 | 00 | 00 | 
+| 2 | An | 1 | 00 | 00 | 
+| 4 | A(HL) | 1 | 00 | 00 | 
+| 5 | A(IXd) | 2 | 0000 | 00 | 
+| 5 | A(IYd) | 2 | 0000 | 00 | 
+
+**CPI** (5 bytes)
+| Pattern Length | Pattern | Opcode Length | Opcode | Function |
+| ------ | ------- | ------ | -------- | ------ |
+| 0 | | 2 | EDA1 | 00 |
+
+**CPIR** (5 bytes)
+| Pattern Length | Pattern | Opcode Length | Opcode | Function |
+| ------ | ------- | ------ | -------- | ------ |
+| 0 | | 2 | EDB1 | 00 |
+
+**CPD** (5 bytes)
+| Pattern Length | Pattern | Opcode Length | Opcode | Function |
+| ------ | ------- | ------ | -------- | ------ |
+| 0 | | 2 | EDA9 | 00 |
+
+**CPDR** (5 bytes)
+| Pattern Length | Pattern | Opcode Length | Opcode | Function |
+| ------ | ------- | ------ | -------- | ------ |
+| 0 | | 2 | EDB9 | 00 |
+
+**LDI** (5 bytes)
+| Pattern Length | Pattern | Opcode Length | Opcode | Function |
+| ------ | ------- | ------ | -------- | ------ |
+| 0 | | 2 | EDA0 | 00 |
+
+**LDIR** (5 bytes)
+| Pattern Length | Pattern | Opcode Length | Opcode | Function |
+| ------ | ------- | ------ | -------- | ------ |
+| 0 | | 2 | EDB0 | 00 |
+
+**LDD** (5 bytes)
+| Pattern Length | Pattern | Opcode Length | Opcode | Function |
+| ------ | ------- | ------ | -------- | ------ |
+| 0 | | 2 | EDA8 | 00 |
+
+**LDDR** (5 bytes)
+| Pattern Length | Pattern | Opcode Length | Opcode | Function |
+| ------ | ------- | ------ | -------- | ------ |
+| 0 | | 2 | EDB8 | 00 |
