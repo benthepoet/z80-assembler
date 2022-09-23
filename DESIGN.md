@@ -1,14 +1,4 @@
-Tokens
-
-* org
-* label
-* constant
-* mnemonic
-* d8 (8-bit literal)
-* a8 (8-bit address)
-* a16 (16-bit address)
-* left/right paren
-* register
+### Reference Example
 
 ```assembly
 
@@ -25,6 +15,60 @@ l1: dec b
     .w $00C0 ; Add word to memory 
     
 ```
+
+### Assembly Logic
+* Read mnemonic
+* Lookup pattern table for mnemonic
+* Read tokens
+* Search pattern table for match
+* Assemble opcode
+* Insert opcode
+* Read next line
+
+### Pattern Classes
+* `r`
+* `rr`
+   * `BC`
+   * `DE`
+   * `HL`
+   * `SP`
+* `r'`
+* `s`
+   * Superclass, breakdown
+* `ss` 
+   * `BC`
+   * `DE`
+   * `HL`
+   * `SP`
+* `qq`
+   * `BC`
+   * `DE`
+   * `HL`
+   * `AF`
+* `d`
+   * `8-bit displacement`
+* `n`
+* `nn`
+* `e`
+   * `8-bit displacement`
+* `m`
+   * Superclass, breakdown
+* `pp`
+   * `BC`
+   * `DE`
+   * `IX`
+   * `SP`
+* `b`
+   * `0-7`
+* `cc`
+   * `NZ`
+   * `Z`
+   * `NC`
+   * `C`
+   * `PO`
+   * `PE`
+   * `P`
+   * `M`
 
 ### Tables
 
