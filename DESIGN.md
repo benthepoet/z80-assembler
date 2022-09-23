@@ -27,6 +27,13 @@ l1: dec b
 
 ### Pattern Classes
 * `r`
+   * `B`
+   * `C`
+   * `D`
+   * `E`
+   * `H`
+   * `L`
+   * `A`
 * `rr`
    * `BC`
    * `DE`
