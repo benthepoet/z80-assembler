@@ -15,11 +15,11 @@ Tokens
 default= #$FF ; Constant
 
 start: ; Named label
-    lda #$00
-    ldx default
-l1:   dex ;
-    bne l1 ; 
-    beq start ; Branch to named label
+    ld a,#$00
+    ld b,default
+l1: dec b 
+    jr nz,l1 
+    jmp start ; Branch to named label
 
     .org $FFFC ; Indicate location in memory
     .w $00C0 ; Add word to memory 
