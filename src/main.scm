@@ -1,5 +1,3 @@
-(include "opcodes.scm")
-
 (define +empty-string+ "")
 
 (define *expression-mode* #f)
@@ -119,8 +117,13 @@
                  ((string=? word "/") (set! *expression-mode* (not *expression-mode*)))
                  ((string=? word "(") (push! ':lp *tokens*))
                  ((string=? word ")") (push! ':rp *tokens*))
-                 ((string=? word "x") (push! ':x *tokens*))
-                 ((string=? word "y") (push! ':y *tokens*))
+                 ((string=? word "a") (push! ':a *tokens*))
+                 ((string=? word "b") (push! ':b *tokens*))
+                 ((string=? word "c") (push! ':c *tokens*))
+                 ((string=? word "d") (push! ':d *tokens*))
+                 ((string=? word "e") (push! ':e *tokens*))
+                 ((string=? word "h") (push! ':h *tokens*))
+                 ((string=? word "l") (push! ':l *tokens*))
                  (else
                   (set-operand! (read-hex-or-label word)))))
             
@@ -157,6 +160,7 @@
                (last-c #\space))
          (cond
           ((char=? c #\,) (string-append! *line-buffer* " "))
+          ((char=? c #\+) (string-append! *line-buffer* " "))
           ((char=? c #\/) (string-append! *line-buffer* " / "))
           ((char=? c #\() (string-append! *line-buffer* " ( "))
           ((char=? c #\)) (string-append! *line-buffer* " ) "))
@@ -190,7 +194,7 @@
 
     (let ((word (read-word)))
       (if (not (string-empty? word))
-          (if (string-match? ':ends word ":=")
+          (if (string-match? ':ends word "=")
               (let ((hex (read-constant)))
                  (store-symbol! (substring word 0 (- (string-length word) 2)) hex)
                  (println "Constant: " (number->hex (cadr hex)))
@@ -281,14 +285,14 @@
             ((:ends) (string=? p (substring str (- sl pl) sl)))
             (else (raise "Unrecognized match type")))))))
 
-(assemble "default:= #$FF")
+(assemble "default= $FF")
 (assemble "start:  nop")
-(assemble "        lda #$00")
-(assemble "        ldx default")
+(assemble "        ld a,$00")
+(assemble "        ld b,default")
 (assemble "l1:")
-(assemble "        dex")
-(assemble "        bne ~l1")
-(assemble "        jmp /$0011 $00F3 -/ $0000")
+(assemble "        dec b")
+(assemble "        jr nz,l1")
+(assemble "        jp /$0011 $00F3 -/ $0000")
 
 (pp *symbols*)
 (pp *expression-stack*)
