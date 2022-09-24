@@ -1,11 +1,11 @@
 (define *opcodes*
   '(("dec"
-     ((#x03 (:b))))
+     ((#x05 (:b))))
     ("ld"
-     ((#x01 (:a :nn))
-      (#x02 (:b :nn))))
+     ((#x3E (:a :nn))
+      (#x06 (:b :nn))))
     ("jr"
-     ((#x04 (:nz :nn))))
+     ((#x04 (:nz :n))))
     ("jp"
      ((#x05 (:nn))))
     ("nop"
@@ -115,7 +115,9 @@
                   (let ((a (pop! *expression-stack*))
                         (b (pop! *expression-stack*)))
                     (push! (- (cadr a) (cadr b)) *expression-stack*)))
-                 ((string=? word "/") (set! *expression-mode* (not *expression-mode*)))
+                 ((string=? word "/")
+                  (set! *expression-mode* (not *expression-mode*))
+                  (set-operand! (list ':nn (pop! *expression-stack*) #x10)))      
                  (else
                   (let ((value (read-hex-or-label word)))
                     (push! value *expression-stack*))))
@@ -158,6 +160,35 @@
   (lambda (label hex)
     (push! (list label hex) *symbols*)))
 
+(define token-equal?
+  (lambda (x y)
+    (cond
+     ((and (equal? x ':n) (equal? y ':nn))
+      (if (> (cadr *operand*) #xFF)
+          (raise "Operand cannot be greater than $FF")
+          (begin
+            (pp "Hello")
+            #t)))
+     (else
+      (equal? x y)))))
+
+(define match-tokens
+  (lambda (expected actual)
+    (if (= (length expected) (length actual))
+        (if (= (length expected) 0)
+            #t
+            (let loop ((i 0)
+                       (x (list-ref expected 0))
+                       (y (list-ref actual 0)))
+              (cond
+               ((not (token-equal? x y)) #f)
+               ((= i (- (length expected) 1)) #t)
+               (else
+                (loop (+ i 1)
+                      (list-ref expected (+ i 1))
+                      (list-ref actual (+ i 1)))))))
+        #f)))
+
 (define find-opcode
   (lambda ()
     (let ((table (assoc *mnemonic* *opcodes*)))
@@ -167,7 +198,7 @@
                         (patterns-tail (cdr (cadr table))))
                (let ((opcode (car pattern))
                      (tokens (cadr pattern)))
-                 (if (equal? tokens (reverse *tokens*))
+                 (if (match-tokens tokens (reverse *tokens*))
                      (set! *opcode* opcode)
                      (if (pair? patterns-tail)
                          (loop (car patterns-tail) (cdr patterns-tail)))))))
@@ -313,7 +344,7 @@
 (assemble "l1:")
 (assemble "        dec b")
 (assemble "        jr nz,l1")
-(assemble "        jp /$0011 $00F3 -/ $10")
+(assemble "        jp /$0011 $00F3 -/")
 
 (pp *symbols*)
 (pp *expression-stack*)
