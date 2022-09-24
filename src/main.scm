@@ -1,9 +1,14 @@
 (define *opcodes*
   '(("dec"
-     ((#x05 (:r))))
+     ((#x05 (:r1))
+      (#xDD2B (:ix))
+      (#xFD2B (:iy))))
     ("ld"
-     ((#x3E (:a :nn))
-      (#x06 (:b :nn))))
+     ((#x40 (:r1 :r2))
+      (#x06 (:r1 :n))
+      (#x46 (:r1 :hl))
+      (#xDD46 (:r1 :lp :ix :n :rp))
+      (#xFD46 (:r1 :lp :iy :n :rp))))
     ("jr"
      ((#x04 (:nz :n))))
     ("jp"
@@ -19,20 +24,6 @@
     (:h 4)
     (:l 5)
     (:a 7)))
-
-(define transform-r
-  (lambda (opcode)
-    (let ((r (car (reverse *tokens*))))
-      (cond
-       ((equal? r ':a) 7)
-       ((equal? r ':l) 6)
-       ((equal? r ':h) 5)
-       ((equal))))
-    (+ opcode 8)))
-
-(define *opcode-transforms*
-  (list
-   (list #x05 transform-r)))
 
 (define +empty-string+ "")
 
@@ -191,13 +182,20 @@
       (if (> (cadr *operand*) #xFF)
           (raise "Operand cannot be greater than $FF")
           #t))
-     ((equal? x ':r)
+     ((equal? x ':r1)
       (let ((r (assoc y table-r)))
         (if (list? r)
             (begin
-              (set! *opcode-offset* (arithmetic-shift (cadr r) 3))
+              (set! *opcode-offset* (+ *opcode-offset* (arithmetic-shift (cadr r) 3)))
               #t)
-            (raise "Token not a valid register"))))
+            #f)))
+     ((equal? x ':r2)
+      (let ((r (assoc y table-r)))
+        (if (list? r)
+            (begin
+              (set! *opcode-offset* (+ *opcode-offset* (cadr r)))
+              #t)
+            #f)))
      (else
       (equal? x y)))))
 
@@ -237,7 +235,9 @@
                  (if (tokens-equal? tokens (reverse *tokens*))
                      (set! *opcode* (+ opcode *opcode-offset*))
                      (if (pair? patterns-tail)
-                         (loop (car patterns-tail) (cdr patterns-tail)))))))
+                         (begin
+                           (set! *opcode-offset* 0)
+                           (loop (car patterns-tail) (cdr patterns-tail))))))))
           (raise "Unable to find opcode for mnemonic")))))                
 
 (define load-line-buffer
@@ -312,7 +312,7 @@
                             (pp *expression-stack*)
                             (raise-error "Instruction could not be interpreted"))
                           (begin
-                            (pp (append (list *mnemonic*) *tokens*))
+                            (pp (append (list *mnemonic*) (reverse *tokens*)))
                             (println "Location: " (number->hex *location-counter*))
                             (set! *location-counter* (+ *location-counter* 1))
                             (println "Opcode: " (number->hex *opcode*))
@@ -380,6 +380,12 @@
 (assemble "        ld b,default")
 (assemble "l1:")
 (assemble "        dec b")
+(assemble "        ld h,l")
+(assemble "        ld a,hl")
+(assemble "        ld a,(ix+$FF)")
+(assemble "        ld b,(iy+$FF)")
+(assemble "        dec ix")
+(assemble "        dec iy")
 (assemble "        jr nz,l1")
 (assemble "        jp /$0011 $00F3 -/")
 
