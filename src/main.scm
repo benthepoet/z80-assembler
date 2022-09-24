@@ -1,3 +1,7 @@
+(define *opcodes*
+  '(("nop"
+     ((#x00 ())))))
+
 (define +empty-string+ "")
 
 (define *expression-mode* #f)
@@ -85,8 +89,6 @@
                (cond
                 ((pair? symbol)
                  (cadr symbol))
-                ((string-match? ':begins word "~")
-                 '(:a8 #x00 #x08))
                 (else
                  '(:a16 #x0000 #x10))))))))
  
@@ -120,6 +122,19 @@
                  ((string=? word "e") (push! ':e *tokens*))
                  ((string=? word "h") (push! ':h *tokens*))
                  ((string=? word "l") (push! ':l *tokens*))
+                 ((string=? word "i") (push! ':i *tokens*))
+                 ((string=? word "r") (push! ':r *tokens*))
+                 ((string=? word "z") (push! ':z *tokens*))
+                 ((string=? word "af") (push! ':af *tokens*))
+                 ((string=? word "bc") (push! ':bc *tokens*))
+                 ((string=? word "de") (push! ':de *tokens*))
+                 ((string=? word "hl") (push! ':hl *tokens*))
+                 ((string=? word "ix") (push! ':ix *tokens*))
+                 ((string=? word "iy") (push! ':iy *tokens*))
+                 ((string=? word "sp") (push! ':sp *tokens*))
+                 ((string=? word "nc") (push! ':nc *tokens*))
+                 ((string=? word "nz") (push! ':nz *tokens*))
+                 ((string=? word "af'") (push! ':af- *tokens*))
                  (else
                   (set-operand! (read-hex-or-label word)))))
             
