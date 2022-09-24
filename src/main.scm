@@ -1,6 +1,6 @@
 (define *opcodes*
   '(("dec"
-     ((#x05 (:b))))
+     ((#x05 (:r))))
     ("ld"
      ((#x3E (:a :nn))
       (#x06 (:b :nn))))
@@ -166,13 +166,13 @@
      ((and (equal? x ':n) (equal? y ':nn))
       (if (> (cadr *operand*) #xFF)
           (raise "Operand cannot be greater than $FF")
-          (begin
-            (pp "Hello")
-            #t)))
+          #t))
+     ((equal? x ':r)
+      (list? (member y '(:a :b :c :d :e :h :l))))
      (else
       (equal? x y)))))
 
-(define match-tokens
+(define tokens-equal?
   (lambda (expected actual)
     (if (= (length expected) (length actual))
         (if (= (length expected) 0)
@@ -198,7 +198,7 @@
                         (patterns-tail (cdr (cadr table))))
                (let ((opcode (car pattern))
                      (tokens (cadr pattern)))
-                 (if (match-tokens tokens (reverse *tokens*))
+                 (if (tokens-equal? tokens (reverse *tokens*))
                      (set! *opcode* opcode)
                      (if (pair? patterns-tail)
                          (loop (car patterns-tail) (cdr patterns-tail)))))))
@@ -247,7 +247,7 @@
       (if (not (string-empty? word))
           (if (string-match? ':ends word "=")
               (let ((hex (read-constant)))
-                 (store-symbol! (substring word 0 (- (string-length word) 2)) hex)
+                 (store-symbol! (substring word 0 (- (string-length word) 1)) hex)
                  (println "Constant: " (number->hex (cadr hex)))
                  (println))
               (begin
