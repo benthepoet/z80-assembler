@@ -11,6 +11,29 @@
     ("nop"
      ((#x00 ())))))
 
+(define table-r
+  '((:b 0)
+    (:c 1)
+    (:d 2)
+    (:e 3)
+    (:h 4)
+    (:l 5)
+    (:a 7)))
+
+(define transform-r
+  (lambda (opcode)
+    (let ((r (car (reverse *tokens*))))
+      (cond
+       ((equal? r ':a) 7)
+       ((equal? r ':l) 6)
+       ((equal? r ':h) 5)
+       ((equal))))
+    (+ opcode 8)))
+
+(define *opcode-transforms*
+  (list
+   (list #x05 transform-r)))
+
 (define +empty-string+ "")
 
 (define *expression-mode* #f)
@@ -28,6 +51,7 @@
 (define *tokens* '())
 
 (define *opcode* #f)
+(define *opcode-offset* 0)
 (define *operand* #f)
 
 (define string-empty?
@@ -168,7 +192,12 @@
           (raise "Operand cannot be greater than $FF")
           #t))
      ((equal? x ':r)
-      (list? (member y '(:a :b :c :d :e :h :l))))
+      (let ((r (assoc y table-r)))
+        (if (list? r)
+            (begin
+              (set! *opcode-offset* (arithmetic-shift (cadr r) 3))
+              #t)
+            (raise "Token not a valid register"))))
      (else
       (equal? x y)))))
 
@@ -189,6 +218,13 @@
                       (list-ref actual (+ i 1)))))))
         #f)))
 
+(define get-opcode-transform
+  (lambda (opcode)
+    (let ((transform (assoc opcode *opcode-transforms*)))
+      (if (pair? transform)
+          (cadr transform)
+          (lambda (x) x)))))
+
 (define find-opcode
   (lambda ()
     (let ((table (assoc *mnemonic* *opcodes*)))
@@ -199,7 +235,7 @@
                (let ((opcode (car pattern))
                      (tokens (cadr pattern)))
                  (if (tokens-equal? tokens (reverse *tokens*))
-                     (set! *opcode* opcode)
+                     (set! *opcode* (+ opcode *opcode-offset*))
                      (if (pair? patterns-tail)
                          (loop (car patterns-tail) (cdr patterns-tail)))))))
           (raise "Unable to find opcode for mnemonic")))))                
@@ -240,9 +276,10 @@
     (set! *mnemonic* +empty-string+)
     (set! *tokens* '())
     
-    (set! *operand* #f)
     (set! *opcode* #f)
-
+    (set! *opcode-offset* 0)
+    (set! *operand* #f)
+    
     (let ((word (read-word)))
       (if (not (string-empty? word))
           (if (string-match? ':ends word "=")
