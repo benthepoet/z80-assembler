@@ -1,5 +1,14 @@
 (define *opcodes*
-  '(("nop"
+  '(("dec"
+     ((#x03 (:b))))
+    ("ld"
+     ((#x01 (:a :nn))
+      (#x02 (:b :nn))))
+    ("jr"
+     ((#x04 (:nz :nn))))
+    ("jp"
+     ((#x05 (:nn))))
+    ("nop"
      ((#x00 ())))))
 
 (define +empty-string+ "")
@@ -76,7 +85,7 @@
     (cond
      ((string-match? ':begins word "$")
       (let ((hex (hex->number (substring word 1 (string-length word)))))
-        (append (list (operand-type ":nn" hex)) hex)))
+        (append (list ':nn) hex)))
 
      (else '()))))
 
@@ -90,7 +99,7 @@
                 ((pair? symbol)
                  (cadr symbol))
                 (else
-                 '(:a16 #x0000 #x10))))))))
+                 '(:nn #x0000 #x10))))))))
  
 
 (define read-tokens
@@ -215,7 +224,7 @@
                     (begin
                       (store-symbol!
                        (substring word 0 (- (string-length word) 1))
-                       (list ':a16 *location-counter* 16))
+                       (list ':nn *location-counter* 16))
 
                       (println "Label: " (number->hex *location-counter*))
                       (println)
@@ -229,6 +238,7 @@
                       (find-opcode)
                       (if (not *opcode*)
                           (begin
+                            (pp *operand*)
                             (pp *tokens*)
                             (pp *expression-mode*)
                             (pp *expression-stack*)
@@ -303,7 +313,7 @@
 (assemble "l1:")
 (assemble "        dec b")
 (assemble "        jr nz,l1")
-(assemble "        jp /$0011 $00F3 -/ $0000")
+(assemble "        jp /$0011 $00F3 -/ $10")
 
 (pp *symbols*)
 (pp *expression-stack*)
