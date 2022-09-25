@@ -15,13 +15,33 @@
       (#x36 (:lp :hl :rp :n))
       (#xDD36 (:lp :ix :n :rp :n2))
       (#xFD36 (:lp :iy :n :rp :n2))
-      (#x0A (:a :lp :bc :rp))))
+      (#x0A (:a :lp :bc :rp))
+      (#x1A (:a :lp :de :rp))
+      (#x3A (:a :lp :nn :rp))
+      (#x02 (:lp :bc :rp :a))
+      (#x12 (:lp :de :rp :a))
+      (#x32 (:lp :nn :rp :a))
+      (#xED57 (:a :i))
+      (#xED5F (:a :r))
+      (#xED47 (:i :a))
+      (#xED4F (:r :a))
+      (#x01 (:dd :nn))
+      (#xDD21 (:ix :nn))
+      (#xFD21 (:iy :nn))
+      (#x2A (:hl :lp :nn :rp))
+      (#xED4B (:dd :lp :nn :rp))))
     ("jr"
      ((#x04 (:nz :n))))
     ("jp"
      ((#x05 (:nn))))
     ("nop"
      ((#x00 ())))))
+
+(define table-dd
+  '((:bc 0)
+    (:de 1)
+    (:hl 2)
+    (:sp 3)))
 
 (define table-r
   '((:b 0)
@@ -202,7 +222,6 @@
   (lambda (x y)
     (cond
      ((and (equal? x ':n) (equal? y ':nn))
-      (pp *operands*)
       (if (and (pair? *operands*) (<= (car *operands*) #xFF))
           (begin
             (inc! *operands-length*)
@@ -229,6 +248,13 @@
         (if (list? r)
             (begin
               (add! *opcode-offset* (cadr r))
+              #t)
+            #f)))
+     ((equal? x ':dd)
+      (let ((dd (assoc y table-dd)))
+        (if (list? dd)
+            (begin
+              (add! *opcode-offset* (arithmetic-shift (cadr dd) 4))
               #t)
             #f)))
      (else
@@ -341,13 +367,12 @@
                           (begin
                             (pp (append (list *mnemonic*) (reverse *tokens*)))
                             (println "Location: " (number->hex *location-counter*))
-                            ; FIX FOR OPCODE SIZE
-                            (inc! *location-counter*)
+                            (add! *location-counter* (byte-count *opcode*))
                             (println "Opcode: " (number->hex *opcode*))
+                            (println "Opcode Length: " (+ (byte-count *opcode*) *operands-length*))
                             (if (pair? *operands*)
                                 (begin
                                   (add! *location-counter* *operands-length*)
-                                  (println "Operands Length:" *operands-length*)
                                   (println "Operands: " (list->hex *operands*))))
                             (println)))))))))))
 
@@ -391,6 +416,16 @@
   (lambda (num)
     (number->string num #x10)))
 
+(define byte-count
+  (lambda (n)
+    (let loop ((i 0)
+               (x n))
+      (set! x (arithmetic-shift x -8))
+      (inc! i)
+      (if (= x 0)
+          i
+          (loop i x)))))
+
 (define string-match?
   (lambda (type str p)
     (let ((sl (string-length str))
@@ -418,6 +453,8 @@
 (assemble "        ld (ix+$10),$FE")
 (assemble "        ld (iy+$20),$ED")
 (assemble "        ld a,(bc)")
+(assemble "        ld de,$1000")
+(assemble "        ld de,($1000)")
 (assemble "        dec ix")
 (assemble "        dec iy")
 (assemble "        jr nz,l1")

@@ -1,7 +1,7 @@
 (define-macro (inc! var)
   `(set! ,var (+ ,var 1)))
 
-(define count-bytes
+(define byte-count
   (lambda (n)
     (let loop ((i 0)
                (x n))
