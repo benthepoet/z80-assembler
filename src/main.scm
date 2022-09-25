@@ -1,8 +1,82 @@
 (define *opcodes*
-  '(("dec"
+  '(("add"
+     ((#x80 (:a :r2))
+      (#xC6 (:a :n))
+      (#x86 (:a :lp :hl :rp))
+      (#xDD86 (:a :lp :ix :n :rp))
+      (#xFD86 (:a :lp :iy :n :rp))
+      (#x09 (:hl :dd))
+      (#xDD09 (:ix :pp))
+      (#xFD09 (:iy :rr))))
+    ("adc"
+     ((#x88 (:a :r2))
+      (#xCE (:a :n))
+      (#x8E (:a :lp :hl :rp))
+      (#xDD8E (:a :lp :ix :n :rp))
+      (#xFD8E (:a :lp :iy :n :rp))
+      (#xED4A (:hl :dd))))
+    ("and"
+     ((#xA0 (:a :r2))
+      (#xE6 (:a :n))
+      (#xA6 (:a :lp :hl :rp))
+      (#xDDA6 (:a :lp :ix :n :rp))
+      (#xFDA6 (:a :lp :iy :n :rp))))
+    ("ccf"
+     ((#x3F ())))
+    ("cp"
+     ((#xB8 (:a :r2))
+      (#xFE (:a :n))
+      (#xBE (:a :lp :hl :rp))
+      (#xDDBE (:a :lp :ix :n :rp))
+      (#xFDBE (:a :lp :iy :n :rp))))
+    ("cpd"
+     ((#xEDA9 ())))
+    ("cpdr"
+     ((#xEDB9 ())))
+    ("cpi"
+     ((#xEDA1 ())))
+    ("cpir"
+     ((#xEDB1 ())))
+    ("cpl"
+     ((#x2F ())))
+    ("daa"
+     ((#x27 ())))
+    ("dec"
      ((#x05 (:r1))
+      (#x35 (:lp :hl :rp))
+      (#xDD35 (:lp :ix :n :rp))
+      (#xFD35 (:lp :iy :n :rp))
+      (#xDD2B (:ix))
+      (#xFD2B (:iy))
+      (#x0B (:dd))
       (#xDD2B (:ix))
       (#xFD2B (:iy))))
+    ("di"
+     ((#xF3 ())))
+    ("ei"
+     ((#xFB ())))
+    ("ex"
+     ((#xEB (:de :hl))
+      (#x08 (:af :af-))
+      (#xE3 (:lp :sp :rp :hl))
+      (#xDDE3 (:lp :sp :rp :ix))
+      (#xFDE3 (:lp :sp :rp :iy))))
+    ("exx"
+     ((#xD9 ())))
+    ("halt"
+     ((#x76 ())))
+    ("im"
+     ((#xED46 (:0))
+      (#xED56 (:1))
+      (#xED5E (:2))))
+    ("inc"
+     ((#x04 (:r1))
+      (#x34 (:lp :hl :rp))
+      (#xDD34 (:lp :ix :n :rp))
+      (#xFD34 (:lp :iy :n :rp))
+      (#x03 (:dd))
+      (#xDD23 (:ix))
+      (#xFD23 (:iy))))
     ("ld"
      ((#x40 (:r1 :r2))
       (#x06 (:r1 :n))
@@ -29,19 +103,85 @@
       (#xDD21 (:ix :nn))
       (#xFD21 (:iy :nn))
       (#x2A (:hl :lp :nn :rp))
-      (#xED4B (:dd :lp :nn :rp))))
+      (#xED4B (:dd :lp :nn :rp))
+      (#xDD2A (:ix :lp :nn :rp))
+      (#xFD2A (:iy :lp :nn :rp))
+      (#x22 (:lp :nn: :rp :hl))
+      (#xED43 (:lp :nn :rp :dd))
+      (#xDD22 (:lp :nn :rp :ix))
+      (#xFD22 (:lp :nn :rp :iy))
+      (#xF9 (:sp :hl))
+      (#xDDF9 (:sp :ix))
+      (#xFDF9 (:sp :iy))))
+    ("ldd"
+     ((#xEDA8 ())))
+    ("lddr"
+     ((#xEDB8 ())))
+    ("ldi"
+     ((#xEDA0 ())))
+    ("ldir"
+     ((#xEDB0 ())))
     ("jr"
      ((#x04 (:nz :n))))
     ("jp"
      ((#x05 (:nn))))
+    ("neg"
+     ((#xED44 ())))
     ("nop"
-     ((#x00 ())))))
+     ((#x00 ())))
+    ("or"
+     ((#xB0 (:a :r2))
+      (#xF6 (:a :n))
+      (#xB6 (:a :lp :hl :rp))
+      (#xDDB6 (:a :lp :ix :n :rp))
+      (#xFDB6 (:a :lp :iy :n :rp))))
+    ("push"
+     ((#xC5 (:qq))
+      (#xDDE5 (:ix))
+      (#xFDE5 (:iy))))
+    ("pop"
+     ((#xC1 (:qq))
+      (#xDDE1 (:ix))
+      (#xFDE1 (:iy))))
+    ("scf"
+     ((#x37 ())))
+    ("sub"
+     ((#x90 (:a :r2))
+      (#xD6 (:a :n))
+      (#x96 (:a :lp :hl :rp))
+      (#xDD96 (:a :lp :ix :n :rp))
+      (#xFD96 (:a :lp :iy :n :rp))))
+    ("sbc"
+     ((#x98 (:a :r2))
+      (#xDE (:a :n))
+      (#x9E (:a :lp :hl :rp))
+      (#xDD9E (:a :lp :ix :n :rp))
+      (#xFD9E (:a :lp :iy :n :rp))
+      (#xED42 (:hl :dd))))
+    ("xor"
+     ((#xA8 (:a :r2))
+      (#xEE (:a :n))
+      (#xAE (:a :lp :hl :rp))
+      (#xDDAE (:a :lp :ix :n :rp))
+      (#xFDAE (:a :lp :iy :n :rp))))))
 
 (define table-dd
   '((:bc 0)
     (:de 1)
     (:hl 2)
     (:sp 3)))
+
+(define table-pp
+  '((:bc 0)
+    (:de 1)
+    (:ix 2)
+    (:sp 3)))
+
+(define table-qq
+  '((:bc 0)
+    (:de 1)
+    (:hl 2)
+    (:af 3)))
 
 (define table-r
   '((:b 0)
@@ -51,6 +191,12 @@
     (:h 4)
     (:l 5)
     (:a 7)))
+
+(define table-rr
+  '((:bc 0)
+    (:de 1)
+    (:iy 2)
+    (:sp 3)))
 
 (define +empty-string+ "")
 
@@ -257,6 +403,27 @@
               (add! *opcode-offset* (arithmetic-shift (cadr dd) 4))
               #t)
             #f)))
+     ((equal? x ':pp)
+      (let ((pp (assoc y table-pp)))
+        (if (list? pp)
+            (begin
+              (add! *opcode-offset* (arithmetic-shift (cadr pp) 4))
+              #t)
+            #f)))
+     ((equal? x ':qq)
+      (let ((qq (assoc y table-qq)))
+        (if (list? qq)
+            (begin
+              (add! *opcode-offset* (arithmetic-shift (cadr qq) 4))
+              #t)
+            #f)))
+     ((equal? x ':rr)
+      (let ((rr (assoc y table-rr)))
+        (if (list? rr)
+            (begin
+              (add! *opcode-offset* (arithmetic-shift (cadr rr) 4))
+              #t)
+            #f)))
      (else
       (equal? x y)))))
 
@@ -455,6 +622,7 @@
 (assemble "        ld a,(bc)")
 (assemble "        ld de,$1000")
 (assemble "        ld de,($1000)")
+(assemble "        add a,h")
 (assemble "        dec ix")
 (assemble "        dec iy")
 (assemble "        jr nz,l1")
