@@ -305,7 +305,12 @@
              hex
              (let ((symbol (assoc word *symbols*)))
                (if (pair? symbol)
-                   (cadr symbol)
+                   (if (string=? *mnemonic* "jr")
+                       (let ((offset (- (cadr symbol) *location-counter*)))
+                         (if (< offset 0)
+                             (+ #x100 offset)
+                             offset))
+                       (cadr symbol))
                    #x0000))))))
  
 (define read-tokens
@@ -473,9 +478,10 @@
 
 (define load-line-buffer
   (lambda (line)
-    (let loop ((i 0)
-               (c (string-ref line 0))
-               (last-c #\space))
+    (if (> (string-length line) 1)
+        (let loop ((i 0)
+                   (c (string-ref line 0))
+                   (last-c #\space))
          (cond
           ((char=? c #\,) (string-append! *line-buffer* " "))
           ((char=? c #\+) (string-append! *line-buffer* " "))
@@ -486,7 +492,7 @@
            (string-append! *line-buffer* (string c))))
 
          (if (< i (- (string-length line) 1))
-             (loop (+ i 1) (string-ref line (+ i 1)) c)))
+             (loop (+ i 1) (string-ref line (+ i 1)) c))))
       
     (pp *line-buffer*)))
 
@@ -619,8 +625,9 @@
     (let loop ((port (open-input-file filename)))
       (let ((line (read-line port)))
         (if (not (eof-object? line))
-          (assemble line)
-          (loop port))))))
+            (begin
+              (assemble line)
+              (loop port)))))))
 
 (assemble-file (cadr (command-line)))
 

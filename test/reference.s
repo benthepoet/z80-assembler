@@ -1,17 +1,12 @@
-default:= #$ff
+default= $FF
 
 start:
-    lda #$00
-    ldx default
+    ld a,$00
+    ld b,default
 l1:
-    dex
-    bne l1
-    beq start
+    dec b
+    jr nz,l1
+    jp start
 end:
-    .w /end start -/
-
-    .org $FFFC
-    .w $00C0
-    
     
     
