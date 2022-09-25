@@ -60,8 +60,11 @@
 (define-macro (append! val var)
   `(set! ,var (append ,var (list ,val))))
 
+(define-macro (add! var val)
+  `(set! ,var (+ ,var ,val)))
+
 (define-macro (inc! var)
-  `(set! ,var (+ ,var 1)))
+  `(add! ,var 1))
 
 (define-macro (pop! var)
   `(let ((head (car ,var))
@@ -74,6 +77,18 @@
 
 (define-macro (string-append! var str)
   `(set! ,var (string-append ,var ,str)))
+
+(define list->hex
+  (lambda (l)
+    (let loop ((s "")
+               (head (car l))
+               (tail (cdr l)))
+      (string-append! s (number->hex (cadr head)))
+      (if (pair? tail)
+          (begin
+            (string-append! s " ")
+            (loop s (car tail) (cdr tail)))
+          s))))
 
 (define operand-type
   (lambda (class hex)
@@ -201,20 +216,20 @@
             #t)
           #f))
      ((and (equal? x ':nn) (equal? y ':nn))
-      (set! *operands-length* (+ *operands-length* 2))
+      (add! *operands-length* 2)
       #t)
      ((equal? x ':r1)
       (let ((r (assoc y table-r)))
         (if (list? r)
             (begin
-              (set! *opcode-offset* (+ *opcode-offset* (arithmetic-shift (cadr r) 3)))
+              (add! *opcode-offset* (arithmetic-shift (cadr r) 3))
               #t)
             #f)))
      ((equal? x ':r2)
       (let ((r (assoc y table-r)))
         (if (list? r)
             (begin
-              (set! *opcode-offset* (+ *opcode-offset* (cadr r)))
+              (add! *opcode-offset* (cadr r))
               #t)
             #f)))
      (else
@@ -291,9 +306,7 @@
     (set! *tokens* '())
     
     (set! *opcode* #f)
-    (set! *opcode-offset* 0)
     (set! *operands* '())
-    (set! *operands-length* 0)
     
     (let ((word (read-word)))
       (if (not (string-empty? word))
@@ -329,13 +342,13 @@
                           (begin
                             (pp (append (list *mnemonic*) (reverse *tokens*)))
                             (println "Location: " (number->hex *location-counter*))
-                            (set! *location-counter* (+ *location-counter* 1))
+                            (inc! *location-counter*)
                             (println "Opcode: " (number->hex *opcode*))
                             (if (pair? *operands*)
-                                (let ((operand (car *operands*)))
-                                  (set! *location-counter* (+ *location-counter* (/ (caddr operand) #x08)))
+                                (begin
+                                  (add! *location-counter* *operands-length*)
                                   (println "Operands Length:" *operands-length*)
-                                  (println "Operands: " (number->hex (cadr operand)))))
+                                  (println "Operands: " (list->hex *operands*))))
                             (println)))))))))))
 
 (define char-digit?
