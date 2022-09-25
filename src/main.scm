@@ -12,7 +12,8 @@
       (#x70 (:lp :hl :rp :r2))
       (#xDD70 (:lp :ix :n :rp :r2))
       (#xFD70 (:lp :iy :n :rp :r2))
-      (#x36 (:lp :hl :rp :n))))
+      (#x36 (:lp :hl :rp :n))
+      (#xDD36 (:lp :ix :n :rp :n2))))
     ("jr"
      ((#x04 (:nz :n))))
     ("jp"
@@ -318,6 +319,7 @@
                             (if (pair? *operands*)
                                 (let ((operand (car *operands*)))
                                   (set! *location-counter* (+ *location-counter* (/ (caddr operand) #x08)))
+                                  (pp *operands*)
                                   (println "Operand: " (number->hex (cadr operand)))))
                             (println)))))))))))
 
@@ -386,6 +388,7 @@
 (assemble "        ld (hl),a")
 (assemble "        ld (ix+$80),a")
 (assemble "        ld (iy+$80),a")
+(assemble "        ld (ix+$10),$FE")
 (assemble "        dec ix")
 (assemble "        dec iy")
 (assemble "        jr nz,l1")
