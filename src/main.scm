@@ -1,3 +1,5 @@
+#!/usr/bin/env gsi-script
+
 (define *opcodes*
   '(("add"
      ((#x80 (:a :r2))
