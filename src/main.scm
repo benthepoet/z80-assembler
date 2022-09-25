@@ -620,6 +620,6 @@
           (assemble line)
           (loop port))))))
 
-(assemble-file "reference.s")
+(assemble-file (cadr (command-line)))
 
 (pp *symbols*)
