@@ -47,7 +47,7 @@
 
 (define *opcode* #f)
 (define *opcode-offset* 0)
-(define *operand* #f)
+(define *operands* '())
 
 (define string-empty?
   (lambda (str)
@@ -120,7 +120,6 @@
                 (else
                  '(:nn #x0000 #x10))))))))
  
-
 (define read-tokens
   (lambda ()
     (let loop ((word (read-word)))
@@ -136,7 +135,7 @@
                     (push! (- (cadr a) (cadr b)) *expression-stack*)))
                  ((string=? word "/")
                   (set! *expression-mode* (not *expression-mode*))
-                  (set-operand! (list ':nn (pop! *expression-stack*) #x10)))      
+                  (push-operand! (list ':nn (pop! *expression-stack*) #x10)))      
                  (else
                   (let ((value (read-hex-or-label word)))
                     (push! value *expression-stack*))))
@@ -166,13 +165,13 @@
                  ((string=? word "nz") (push! ':nz *tokens*))
                  ((string=? word "af'") (push! ':af- *tokens*))
                  (else
-                  (set-operand! (read-hex-or-label word)))))
+                  (push-operand! (read-hex-or-label word)))))
             
             (loop (read-word)))))))
 
-(define set-operand!
+(define push-operand!
   (lambda (hex)
-    (set! *operand* hex)
+    (push! hex *operands*)
     (push! (car hex) *tokens*)))
 
 (define store-symbol!
@@ -183,7 +182,7 @@
   (lambda (x y)
     (cond
      ((and (equal? x ':n) (equal? y ':nn))
-      (if (> (cadr *operand*) #xFF)
+      (if (> (cadr (car *operands*)) #xFF)
           (raise "Operand cannot be greater than $FF")
           #t))
      ((equal? x ':r1)
@@ -219,13 +218,6 @@
                       (list-ref expected (+ i 1))
                       (list-ref actual (+ i 1)))))))
         #f)))
-
-(define get-opcode-transform
-  (lambda (opcode)
-    (let ((transform (assoc opcode *opcode-transforms*)))
-      (if (pair? transform)
-          (cadr transform)
-          (lambda (x) x)))))
 
 (define find-opcode
   (lambda ()
@@ -282,7 +274,7 @@
     
     (set! *opcode* #f)
     (set! *opcode-offset* 0)
-    (set! *operand* #f)
+    (set! *operands* '())
     
     (let ((word (read-word)))
       (if (not (string-empty? word))
@@ -310,7 +302,7 @@
                       (find-opcode)
                       (if (not *opcode*)
                           (begin
-                            (pp *operand*)
+                            (pp *operands*)
                             (pp *tokens*)
                             (pp *expression-mode*)
                             (pp *expression-stack*)
@@ -320,10 +312,10 @@
                             (println "Location: " (number->hex *location-counter*))
                             (set! *location-counter* (+ *location-counter* 1))
                             (println "Opcode: " (number->hex *opcode*))
-                            (if *operand*
-                                (begin
-                                  (set! *location-counter* (+ *location-counter* (/ (caddr *operand*) #x08)))
-                                  (println "Operand: " (number->hex (cadr *operand*)))))
+                            (if (pair? *operands*)
+                                (let ((operand (car *operands*)))
+                                  (set! *location-counter* (+ *location-counter* (/ (caddr operand) #x08)))
+                                  (println "Operand: " (number->hex (cadr operand)))))
                             (println)))))))))))
 
 (define char-digit?
