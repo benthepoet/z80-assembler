@@ -83,7 +83,7 @@
     (let loop ((s "")
                (head (car l))
                (tail (cdr l)))
-      (string-append! s (number->hex (cadr head)))
+      (string-append! s (number->hex head))
       (if (pair? tail)
           (begin
             (string-append! s " ")
@@ -97,7 +97,7 @@
 (define read-constant
   (lambda ()
     (let ((hex (read-hex (read-word))))
-      (if (pair? hex)
+      (if hex
           hex
           (raise "Invalid value for constant")))))
 
@@ -126,21 +126,19 @@
     (cond
      ((string-match? ':begins word "$")
       (let ((hex (hex->number (substring word 1 (string-length word)))))
-        (append (list ':nn) hex)))
+        hex))
 
-     (else '()))))
+     (else #f))))
 
 (define read-hex-or-label
   (lambda (word)
     (let ((hex (read-hex word)))
-         (if (pair? hex)
+         (if hex
              hex
              (let ((symbol (assoc word *symbols*)))
-               (cond
-                ((pair? symbol)
-                 (cadr symbol))
-                (else
-                 '(:nn #x0000 #x10))))))))
+               (if (pair? symbol)
+                   (cadr symbol)
+                   #x0000))))))
  
 (define read-tokens
   (lambda ()
@@ -154,10 +152,10 @@
                  ((string=? word "-")
                   (let ((a (pop! *expression-stack*))
                         (b (pop! *expression-stack*)))
-                    (push! (- (cadr a) (cadr b)) *expression-stack*)))
+                    (push! (- a b) *expression-stack*)))
                  ((string=? word "/")
                   (set! *expression-mode* (not *expression-mode*))
-                  (push-operand! (list ':nn (pop! *expression-stack*) #x10)))      
+                  (push-operand! (pop! *expression-stack*)))      
                  (else
                   (let ((value (read-hex-or-label word)))
                     (push! value *expression-stack*))))
@@ -194,7 +192,7 @@
 (define push-operand!
   (lambda (hex)
     (append! hex *operands*)
-    (push! (car hex) *tokens*)))
+    (push! ':nn *tokens*)))
 
 (define store-symbol!
   (lambda (label hex)
@@ -204,13 +202,14 @@
   (lambda (x y)
     (cond
      ((and (equal? x ':n) (equal? y ':nn))
-      (if (and (pair? *operands*) (<= (cadr (car *operands*)) #xFF))
+      (pp *operands*)
+      (if (and (pair? *operands*) (<= (car *operands*) #xFF))
           (begin
             (inc! *operands-length*)
             #t)
           #f))
      ((and (equal? x ':n2) (equal? y ':nn))
-      (if (and (= (length *operands*) 2) (<= (cadr (cadr *operands*)) #xFF))
+      (if (and (= (length *operands*) 2) (<= (cadr *operands*) #xFF))
           (begin
             (inc! *operands-length*)
             #t)
@@ -311,16 +310,16 @@
     (let ((word (read-word)))
       (if (not (string-empty? word))
           (if (string-match? ':ends word "=")
-              (let ((hex (read-constant)))
-                 (store-symbol! (substring word 0 (- (string-length word) 1)) hex)
-                 (println "Constant: " (number->hex (cadr hex)))
+              (let ((constant (read-constant)))
+                 (store-symbol! (substring word 0 (- (string-length word) 1)) constant)
+                 (println "Constant: " (number->hex constant))
                  (println))
               (begin
                 (if (string-match? ':ends word ":")
                     (begin
                       (store-symbol!
                        (substring word 0 (- (string-length word) 1))
-                       (list ':nn *location-counter* 16))
+                       *location-counter*)
 
                       (println "Label: " (number->hex *location-counter*))
                       (println)
@@ -342,6 +341,7 @@
                           (begin
                             (pp (append (list *mnemonic*) (reverse *tokens*)))
                             (println "Location: " (number->hex *location-counter*))
+                            ; FIX FOR OPCODE SIZE
                             (inc! *location-counter*)
                             (println "Opcode: " (number->hex *opcode*))
                             (if (pair? *operands*)
@@ -383,8 +383,7 @@
 
               (if (< i length)
                   (loop i (string-ref str i))
-                  (let ((bytes (/ (+ length (modulo length 2)) 2)))
-                    (list value (arithmetic-shift bytes 3)))))
+                  value))
             
             (raise-error "Invalid hex character"))))))
 
