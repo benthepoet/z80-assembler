@@ -8,7 +8,10 @@
       (#x06 (:r1 :n))
       (#x46 (:r1 :hl))
       (#xDD46 (:r1 :lp :ix :n :rp))
-      (#xFD46 (:r1 :lp :iy :n :rp))))
+      (#xFD46 (:r1 :lp :iy :n :rp))
+      (#x70 (:lp :hl :rp :r2))
+      (#xDD70 (:lp :ix :n :rp :r2))
+      (#xFD70 (:lp :iy :n :rp :r2))))
     ("jr"
      ((#x04 (:nz :n))))
     ("jp"
@@ -384,10 +387,12 @@
 (assemble "        ld a,hl")
 (assemble "        ld a,(ix+$FF)")
 (assemble "        ld b,(iy+$FF)")
+(assemble "        ld (hl),a")
+(assemble "        ld (ix+$80),a")
+(assemble "        ld (iy+$80),a")
 (assemble "        dec ix")
 (assemble "        dec iy")
 (assemble "        jr nz,l1")
 (assemble "        jp /$0011 $00F3 -/")
 
 (pp *symbols*)
-(pp *expression-stack*)
