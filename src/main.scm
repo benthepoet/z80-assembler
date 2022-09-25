@@ -51,6 +51,7 @@
 (define *opcode* #f)
 (define *opcode-offset* 0)
 (define *operands* '())
+(define *operands-length* 0)
 
 (define string-empty?
   (lambda (str)
@@ -188,9 +189,20 @@
   (lambda (x y)
     (cond
      ((and (equal? x ':n) (equal? y ':nn))
-      (and (pair? *operands*) (<= (cadr (car *operands*)) #xFF)))
+      (if (and (pair? *operands*) (<= (cadr (car *operands*)) #xFF))
+          (begin
+            (inc! *operands-length*)
+            #t)
+          #f))
      ((and (equal? x ':n2) (equal? y ':nn))
-      (and (= (length *operands*) 2) (<= (cadr (cadr *operands*)) #xFF)))
+      (if (and (= (length *operands*) 2) (<= (cadr (cadr *operands*)) #xFF))
+          (begin
+            (inc! *operands-length*)
+            #t)
+          #f))
+     ((and (equal? x ':nn) (equal? y ':nn))
+      (set! *operands-length* (+ *operands-length* 2))
+      #t)
      ((equal? x ':r1)
       (let ((r (assoc y table-r)))
         (if (list? r)
@@ -234,12 +246,12 @@
                         (patterns-tail (cdr (cadr table))))
                (let ((opcode (car pattern))
                      (tokens (cadr pattern)))
+                 (set! *opcode-offset* 0)
+                 (set! *operands-length* 0)
                  (if (tokens-equal? tokens (reverse *tokens*))
                      (set! *opcode* (+ opcode *opcode-offset*))
                      (if (pair? patterns-tail)
-                         (begin
-                           (set! *opcode-offset* 0)
-                           (loop (car patterns-tail) (cdr patterns-tail))))))))
+                         (loop (car patterns-tail) (cdr patterns-tail)))))))
           (raise "Unable to find opcode for mnemonic")))))                
 
 (define load-line-buffer
@@ -281,6 +293,7 @@
     (set! *opcode* #f)
     (set! *opcode-offset* 0)
     (set! *operands* '())
+    (set! *operands-length* 0)
     
     (let ((word (read-word)))
       (if (not (string-empty? word))
@@ -321,8 +334,8 @@
                             (if (pair? *operands*)
                                 (let ((operand (car *operands*)))
                                   (set! *location-counter* (+ *location-counter* (/ (caddr operand) #x08)))
-                                  (pp *operands*)
-                                  (println "Operand: " (number->hex (cadr operand)))))
+                                  (println "Operands Length:" *operands-length*)
+                                  (println "Operands: " (number->hex (cadr operand)))))
                             (println)))))))))))
 
 (define char-digit?
