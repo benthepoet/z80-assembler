@@ -53,6 +53,9 @@
   (lambda (str)
     (string=? str +empty-string+))) 
 
+(define-macro (append! val var)
+  `(set! ,var (append ,var (list ,val))))
+
 (define-macro (inc! var)
   `(set! ,var (+ ,var 1)))
 
@@ -171,7 +174,7 @@
 
 (define push-operand!
   (lambda (hex)
-    (push! hex *operands*)
+    (append! hex *operands*)
     (push! (car hex) *tokens*)))
 
 (define store-symbol!
@@ -182,9 +185,9 @@
   (lambda (x y)
     (cond
      ((and (equal? x ':n) (equal? y ':nn))
-      (if (> (cadr (car *operands*)) #xFF)
-          (raise "Operand cannot be greater than $FF")
-          #t))
+      (and (pair? *operands*) (<= (cadr (car *operands*)) #xFF)))
+     ((and (equal? x ':n2) (equal? y ':nn))
+      (and (= (length *operands*) 2) (<= (cadr (cadr *operands*)) #xFF)))
      ((equal? x ':r1)
       (let ((r (assoc y table-r)))
         (if (list? r)
