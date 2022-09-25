@@ -13,7 +13,9 @@
       (#xDD70 (:lp :ix :n :rp :r2))
       (#xFD70 (:lp :iy :n :rp :r2))
       (#x36 (:lp :hl :rp :n))
-      (#xDD36 (:lp :ix :n :rp :n2))))
+      (#xDD36 (:lp :ix :n :rp :n2))
+      (#xFD36 (:lp :iy :n :rp :n2))
+      (#x0A (:a :lp :bc :rp))))
     ("jr"
      ((#x04 (:nz :n))))
     ("jp"
@@ -389,6 +391,8 @@
 (assemble "        ld (ix+$80),a")
 (assemble "        ld (iy+$80),a")
 (assemble "        ld (ix+$10),$FE")
+(assemble "        ld (iy+$20),$ED")
+(assemble "        ld a,(bc)")
 (assemble "        dec ix")
 (assemble "        dec iy")
 (assemble "        jr nz,l1")
