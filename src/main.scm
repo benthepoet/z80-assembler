@@ -328,6 +328,14 @@
             
                 (cond
                  ((string=? word "/") (set! *expression-mode* (not *expression-mode*)))
+                 ((string=? word "0") (push! ':0 *tokens*))
+                 ((string=? word "1") (push! ':1 *tokens*))
+                 ((string=? word "2") (push! ':2 *tokens*))
+                 ((string=? word "3") (push! ':3 *tokens*))
+                 ((string=? word "4") (push! ':4 *tokens*))
+                 ((string=? word "5") (push! ':5 *tokens*))
+                 ((string=? word "6") (push! ':6 *tokens*))
+                 ((string=? word "7") (push! ':7 *tokens*))
                  ((string=? word "(") (push! ':lp *tokens*))
                  ((string=? word ")") (push! ':rp *tokens*))
                  ((string=? word "a") (push! ':a *tokens*))
@@ -625,6 +633,7 @@
 (assemble "        add a,h")
 (assemble "        dec ix")
 (assemble "        dec iy")
+(assemble "        im 1")
 (assemble "        jr nz,l1")
 (assemble "        jp /$0011 $00F3 -/")
 
