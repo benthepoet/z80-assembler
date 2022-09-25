@@ -11,7 +11,8 @@
       (#xFD46 (:r1 :lp :iy :n :rp))
       (#x70 (:lp :hl :rp :r2))
       (#xDD70 (:lp :ix :n :rp :r2))
-      (#xFD70 (:lp :iy :n :rp :r2))))
+      (#xFD70 (:lp :iy :n :rp :r2))
+      (#x36 (:lp :hl :rp :n))))
     ("jr"
      ((#x04 (:nz :n))))
     ("jp"
