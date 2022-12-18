@@ -22,12 +22,12 @@ const PATTERNS = {
 		{
 			pattern: ['a', '(', 'hl', ')'],
 			prefix: 0x00,
-			base: 0x86
+			base: 0xA6
 		},
 		{
 			pattern: ['a', '(', 'ix', 'dp', ')'],
 			prefix: 0xDD,
-			base: 0x86
+			base: 0xA6
 		},
 		{
 			pattern: ['a', '(', 'iy', 'dp', ')'],
@@ -153,7 +153,7 @@ function and_cp_or_xor(mnemonic, tokens) {
 			opcode |= s;
 		}
 
-		return [toHex(pattern.prefix), toHex(opcode)];
+		return [to_hex(pattern.prefix), to_hex(opcode)];
 	}
 
 	throw Error('Failed to match any pattern');
@@ -176,15 +176,29 @@ function inc_dec(mnemonic, tokens) {
 			opcode |= s;
 		}
 
-		return [toHex(pattern.prefix), toHex(opcode)];
+		return [to_hex(pattern.prefix), to_hex(opcode)];
 	}
 
 	throw Error('Failed to match any pattern.');
 }
 
-function toHex(value) {
+function find_mnemonic(mnemonic) {
+	for (const k of Object.keys(MNEMONICS)) {
+		if (mnemonic === k) return MNEMONICS[k];
+	}
+
+	return null;
+}
+
+function assemble(mnemonic, tokens) {
+	const mnemonic_fn = find_mnemonic(mnemonic);
+	if (mnemonic_fn != null) return mnemonic_fn(mnemonic, tokens);
+	throw Error('Failed to match any mnemonic.');
+}
+
+function to_hex(value) {
 	return value.toString(16);
 }
 
-console.log(inc_dec('inc', ['(', 'iy', 0x00, ')']));
-console.log(and_cp_or_xor('and', ['a', '(', 'iy', 0xFF, ')']));
+console.log(assemble('inc', ['(', 'iy', 0x00, ')']));
+console.log(assemble('and', ['a', '(', 'iy', 0xFF, ')']));
