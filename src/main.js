@@ -7,15 +7,30 @@ const PATTERNS = {
 	inc_dec_group_1: [
 		{
 			pattern: ['r1'],
-			prefix: 00,
-			base: 04
+			prefix: 0x00,
+			base: 0x04
+		},
+		{
+			pattern: ['(', 'hl', ')'],
+			prefix: 0x00,
+			base: 0x34
 		}
 	],
 	inc_dec_group_2: [
 		{
 			pattern: ['ss'],
-			prefix: 00,
-			base: 03
+			prefix: 0x00,
+			base: 0x03
+		},
+		{
+			pattern: ['ix'],
+			prefix: 0xDD,
+			base: 0x23
+		},
+		{
+			pattern: ['iy'],
+			prefix: 0xFD,
+			base: 0x23
 		}
 	]
 };
@@ -95,4 +110,4 @@ function toHex(value) {
 	return value.toString(16);
 }
 
-console.log(inc_dec('dec', ['sp']));
+console.log(inc_dec('dec', ['(', 'hl', ')']));
