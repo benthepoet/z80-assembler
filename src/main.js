@@ -1,4 +1,6 @@
 const MNEMONICS = {
+	adc: add_adc_sub_sbc,
+	add: add_adc_sub_sbc,
 	and: and_cp_or_xor,
 	bit: bit_set_res,
 	cp: and_cp_or_xor,
@@ -8,7 +10,16 @@ const MNEMONICS = {
 	push: push_pop,
 	pop: push_pop,
 	res: bit_set_res,
+	rl: rlc_rl_rrc_rr_sla_sra_srl,
+	rlc: rlc_rl_rrc_rr_sla_sra_srl,
+	rr: rlc_rl_rrc_rr_sla_sra_srl,
+	rrc: rlc_rl_rrc_rr_sla_sra_srl,
+	sbc: add_adc_sub_sbc,
 	set: bit_set_res,
+	sla: rlc_rl_rrc_rr_sla_sra_srl,
+	sra: rlc_rl_rrc_rr_sla_sra_srl,
+	srl: rlc_rl_rrc_rr_sla_sra_srl,
+	sub: add_adc_sub_sbc,
 	xor: and_cp_or_xor
 };
 
@@ -117,6 +128,28 @@ const PATTERNS = {
 			prefix: 0xFD,
 			base: 0xE1
 		}
+	],
+	rlc_rl_rrc_rr_sla_sra_srl_group_1: [
+		{
+			pattern: ["r'"],
+			prefix: 0xCB,
+			base: 0x00
+		},
+		{
+			pattern: ["(", "hl", ")"],
+			prefix: 0xCB,
+			base: 0x06
+		},
+		{
+			pattern: ["(", "ix", "dp", ")"],
+			prefix: 0xDDCB,
+			base: 0x06
+		},
+		{
+			pattern: ["(", "iy", "dp", ")"],
+			prefix: 0xFDCB,
+			base: 0x06
+		}
 	]
 };
 
@@ -191,6 +224,10 @@ function find_pattern(tokens, patterns, match_fn) {
 	return null;
 }
 
+function add_adc_sub_sbc(mnemonic, tokens) {
+	throw Error("Failed to match any pattern.");
+}
+
 function and_cp_or_xor(mnemonic, tokens) {
 	let opcode = null;
 	let pattern = null;
@@ -249,6 +286,25 @@ function push_pop(mnemonic, tokens) {
 	if ((pattern = find_pattern(tokens, PATTERNS.push_pop_group_1, match_group_2)) !== null) {
 		opcode = pattern.base;
 		if (mnemonic === "pop") opcode |= 4;
+
+		opcode = apply_opcode_shifts(opcode);
+		return [to_hex(pattern.prefix), to_hex(opcode)];
+	}
+
+	throw Error("Failed to match any pattern.");
+}
+
+function rlc_rl_rrc_rr_sla_sra_srl(mnemonic, tokens) {
+	let opcode = null;
+	let pattern = null;
+	if ((pattern = find_pattern(tokens, PATTERNS.rlc_rl_rrc_rr_sla_sra_srl_group_1, match_group_1)) !== null) {
+		opcode = pattern.base;
+		if (mnemonic === "rrc") opcode |= 8;
+		else if (mnemonic === "rl") opcode |= 16;
+		else if (mnemonic === "rr") opcode |= 24;
+		else if (mnemonic === "sla") opcode |= 32;
+		else if (mnemonic === "sra") opcode |= 48;
+		else if (mnemonic === "srl") opcode |= 56;
 
 		opcode = apply_opcode_shifts(opcode);
 		return [to_hex(pattern.prefix), to_hex(opcode)];
