@@ -18,6 +18,21 @@ const PATTERNS = {
 			pattern: ['a', 'n'],
 			prefix: 0x00,
 			base: 0xE6
+		},
+		{
+			pattern: ['a', '(', 'hl', ')'],
+			prefix: 0x00,
+			base: 0x86
+		},
+		{
+			pattern: ['a', '(', 'ix', 'dp', ')'],
+			prefix: 0xDD,
+			base: 0x86
+		},
+		{
+			pattern: ['a', '(', 'iy', 'dp', ')'],
+			prefix: 0xFD,
+			base: 0x86
 		}
 	],
 	inc_dec_group_1: [
@@ -172,4 +187,4 @@ function toHex(value) {
 }
 
 console.log(inc_dec('inc', ['(', 'iy', 0x00, ')']));
-console.log(and_cp_or_xor('and', ['a', 0xFF]));
+console.log(and_cp_or_xor('and', ['a', '(', 'iy', 0xFF, ')']));
