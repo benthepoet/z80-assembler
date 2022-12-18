@@ -4,106 +4,121 @@ const MNEMONICS = {
 	dec: inc_dec,
 	inc: inc_dec,
 	or: and_cp_or_xor,
+	push: push_pop,
+	pop: push_pop,
 	xor: and_cp_or_xor
 };
 
 const PATTERNS = {
 	and_cp_or_xor_group_1: [
 		{
-			pattern: ['a', 'r2'],
+			pattern: ["a", "r'"],
 			prefix: 0x00,
 			base: 0xA0
 		},
 		{
-			pattern: ['a', 'n'],
+			pattern: ["a", "n"],
 			prefix: 0x00,
 			base: 0xE6
 		},
 		{
-			pattern: ['a', '(', 'hl', ')'],
+			pattern: ["a", "(", "hl", ")"],
 			prefix: 0x00,
 			base: 0xA6
 		},
 		{
-			pattern: ['a', '(', 'ix', 'dp', ')'],
+			pattern: ["a", "(", "ix", "dp", ")"],
 			prefix: 0xDD,
 			base: 0xA6
 		},
 		{
-			pattern: ['a', '(', 'iy', 'dp', ')'],
+			pattern: ["a", "(", "iy", "dp", ")"],
 			prefix: 0xFD,
 			base: 0x86
 		}
 	],
 	inc_dec_group_1: [
 		{
-			pattern: ['r1'],
+			pattern: ["r"],
 			prefix: 0x00,
 			base: 0x04
 		},
 		{
-			pattern: ['(', 'hl', ')'],
+			pattern: ["(", "hl", ")"],
 			prefix: 0x00,
 			base: 0x34
 		},
 		{
-			pattern: ['(', 'ix', 'dp', ')'],
+			pattern: ["(", "ix", "dp", ")"],
 			prefix: 0xDD,
 			base: 0x34
 		},
 		{
-			pattern: ['(', 'iy', 'dp', ')'],
+			pattern: ["(", "iy", "dp", ")"],
 			prefix: 0xFD,
 			base: 0x34
 		}
 	],
 	inc_dec_group_2: [
 		{
-			pattern: ['ss'],
+			pattern: ["ss"],
 			prefix: 0x00,
 			base: 0x03
 		},
 		{
-			pattern: ['ix'],
+			pattern: ["ix"],
 			prefix: 0xDD,
 			base: 0x23
 		},
 		{
-			pattern: ['iy'],
+			pattern: ["iy"],
 			prefix: 0xFD,
 			base: 0x23
+		}
+	],
+	push_pop_group_1: [
+		{
+			pattern: ["qq"],
+			prefix: 0x00,
+			base: 0xC1
+		},
+		{
+			pattern: ["ix"],
+			prefix: 0xDD,
+			base: 0xE1
+		},
+		{
+			pattern: ["iy"],
+			prefix: 0xFD,
+			base: 0xE1
 		}
 	]
 };
 
 const MATCH_TABLES = {
-	r1: ['b','c','d','e','h','l','a'],
-	r2: ['b','c','d','e','h','l','a'],
-	ss: ['bc','de','hl','sp']
+	qq: ["bc","de","hl","af"],
+	r: ["b","c","d","e","h","l","a"],
+	ss: ["bc","de","hl","sp"]
 };
 
 let opcode_shifts = [];
 
 function match_group_1(token, sym) {
-	if (sym === 'r1') {
-		let i = MATCH_TABLES.r1.indexOf(token);
+	if (sym === "r" || sym === "r'") {
+		let i = MATCH_TABLES.r.indexOf(token);
 		if (i === -1) return false;
 		else if (i === 6) i++;
-		opcode_shifts.push(i << 3);
+
+		if (sym === "r") opcode_shifts.push(i << 3);
+		else if (sym === "r'") opcode_shifts.push(i);
+
 		return true;
 	}
-	else if (sym === 'r2') {
-		let i = MATCH_TABLES.r2.indexOf(token);
-		if (i === -1) return false;
-		else if (i === 6) i++;
-		opcode_shifts.push(i);
-		return true;
-	}
-	else if (sym === 'dp') {
+	else if (sym === "dp") {
 		if (token < 0x00 || token > 0xFF) return false;
 		return true;
 	}
-	else if (sym === 'n') {
+	else if (sym === "n") {
 		if (token < 0x00 || token > 0xFF) return false;
 		return true;
 	}
@@ -112,7 +127,13 @@ function match_group_1(token, sym) {
 }
 
 function match_group_2(token, sym) {
-	if (sym === 'ss') {
+	if (sym === "qq") {
+		let i = MATCH_TABLES.qq.indexOf(token);
+		if (i === -1) return false;
+		opcode_shifts.push(i << 4);
+		return true;
+	}
+	else if (sym === "ss") {
 		let i = MATCH_TABLES.ss.indexOf(token);
 		if (i === -1) return false;
 		opcode_shifts.push(i << 4);
@@ -145,18 +166,15 @@ function and_cp_or_xor(mnemonic, tokens) {
 	let pattern = null;
 	if ((pattern = find_pattern(tokens, PATTERNS.and_cp_or_xor_group_1, match_group_1)) !== null) {
 		opcode = pattern.base;
-		if (mnemonic == 'xor') opcode |= 8;
-		else if (mnemonic == 'or') opcode |= 16;
-		else if (mnemonic == 'cp') opcode |= 24;
+		if (mnemonic == "xor") opcode |= 8;
+		else if (mnemonic == "or") opcode |= 16;
+		else if (mnemonic == "cp") opcode |= 24;
 
-		for (const s of opcode_shifts) {
-			opcode |= s;
-		}
-
+		opcode = apply_opcode_shifts(opcode);
 		return [to_hex(pattern.prefix), to_hex(opcode)];
 	}
 
-	throw Error('Failed to match any pattern');
+	throw Error("Failed to match any pattern.");
 }
 
 function inc_dec(mnemonic, tokens) {
@@ -164,22 +182,33 @@ function inc_dec(mnemonic, tokens) {
 	let pattern = null;
 	if ((pattern = find_pattern(tokens, PATTERNS.inc_dec_group_1, match_group_1)) !== null) {
 		opcode = pattern.base;
-		if (mnemonic === 'dec') opcode |= 1;
+		if (mnemonic === "dec") opcode |= 1;
 	}
 	else if ((pattern = find_pattern(tokens, PATTERNS.inc_dec_group_2, match_group_2)) !== null) {
 		opcode = pattern.base;
-		if (mnemonic === 'dec') opcode |= 8;
+		if (mnemonic === "dec") opcode |= 8;
 	}
 
 	if (opcode !== null) {
-		for (const s of opcode_shifts) {
-			opcode |= s;
-		}
-
+		opcode = apply_opcode_shifts(opcode);
 		return [to_hex(pattern.prefix), to_hex(opcode)];
 	}
 
-	throw Error('Failed to match any pattern.');
+	throw Error("Failed to match any pattern.");
+}
+
+function push_pop(mnemonic, tokens) {
+	let opcode = null;
+	let pattern = null;
+	if ((pattern = find_pattern(tokens, PATTERNS.push_pop_group_1, match_group_2)) !== null) {
+		opcode = pattern.base;
+		if (mnemonic === "pop") opcode |= 4;
+
+		opcode = apply_opcode_shifts(opcode);
+		return [to_hex(pattern.prefix), to_hex(opcode)];
+	}
+
+	throw Error("Failed to match any pattern.");
 }
 
 function find_mnemonic(mnemonic) {
@@ -190,15 +219,23 @@ function find_mnemonic(mnemonic) {
 	return null;
 }
 
+function apply_opcode_shifts(opcode) {
+	for (const s of opcode_shifts) {
+		opcode |= s;
+	}
+
+	return opcode;
+}
+
 function assemble(mnemonic, tokens) {
 	const mnemonic_fn = find_mnemonic(mnemonic);
 	if (mnemonic_fn != null) return mnemonic_fn(mnemonic, tokens);
-	throw Error('Failed to match any mnemonic.');
+	throw Error("Failed to match any mnemonic.");
 }
 
 function to_hex(value) {
 	return value.toString(16);
 }
 
-console.log(assemble('inc', ['(', 'iy', 0x00, ')']));
-console.log(assemble('and', ['a', '(', 'iy', 0xFF, ')']));
+console.log(assemble("inc", ["(", "iy", 0x00, ")"]));
+console.log(assemble("and", ["a", "(", "iy", 0xFF, ")"]));
