@@ -45,6 +45,21 @@ const PATTERNS = {
 			pattern: ["bt", "r'"],
 			prefix: 0xCB,
 			base: 0x00
+		},
+		{
+			pattern: ["bt", "(", "hl", ")"],
+			prefix: 0xCB,
+			base: 0x06
+		},
+		{
+			pattern: ["bt", "(", "ix", "dp", ")"],
+			prefix: 0xDDCB,
+			base: 0x06
+		},
+		{
+			pattern: ["bt", "(", "iy", "dp", ")"],
+			prefix: 0xFDCB,
+			base: 0x06
 		}
 	],
 	inc_dec_group_1: [
@@ -268,6 +283,4 @@ function to_hex(value) {
 	return value.toString(16);
 }
 
-console.log(assemble("inc", ["(", "iy", 0x00, ")"]));
-console.log(assemble("and", ["a", "c"]));
-console.log(assemble("res", [2, "h"]));
+exports.assemble = assemble;
