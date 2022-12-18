@@ -1,9 +1,25 @@
 const MNEMONICS = {
+	and: and_cp_or_xor,
+	cp: and_cp_or_xor,
 	dec: inc_dec,
-	inc: inc_dec
+	inc: inc_dec,
+	or: and_cp_or_xor,
+	xor: and_cp_or_xor
 };
 
 const PATTERNS = {
+	and_cp_or_xor_group_1: [
+		{
+			pattern: ['a', 'r2'],
+			prefix: 0x00,
+			base: 0xA0
+		},
+		{
+			pattern: ['a', 'n'],
+			prefix: 0x00,
+			base: 0xE6
+		}
+	],
 	inc_dec_group_1: [
 		{
 			pattern: ['r1'],
@@ -47,6 +63,7 @@ const PATTERNS = {
 
 const MATCH_TABLES = {
 	r1: ['b','c','d','e','h','l','a'],
+	r2: ['b','c','d','e','h','l','a'],
 	ss: ['bc','de','hl','sp']
 };
 
@@ -60,7 +77,18 @@ function match_group_1(token, sym) {
 		opcode_shifts.push(i << 3);
 		return true;
 	}
+	else if (sym === 'r2') {
+		let i = MATCH_TABLES.r2.indexOf(token);
+		if (i === -1) return false;
+		else if (i === 6) i++;
+		opcode_shifts.push(i);
+		return true;
+	}
 	else if (sym === 'dp') {
+		if (token < 0x00 || token > 0xFF) return false;
+		return true;
+	}
+	else if (sym === 'n') {
 		if (token < 0x00 || token > 0xFF) return false;
 		return true;
 	}
@@ -97,6 +125,25 @@ function find_pattern(tokens, patterns, match_fn) {
 	return null;
 }
 
+function and_cp_or_xor(mnemonic, tokens) {
+	let opcode = null;
+	let pattern = null;
+	if ((pattern = find_pattern(tokens, PATTERNS.and_cp_or_xor_group_1, match_group_1)) !== null) {
+		opcode = pattern.base;
+		if (mnemonic == 'xor') opcode |= 8;
+		else if (mnemonic == 'or') opcode |= 16;
+		else if (mnemonic == 'cp') opcode |= 24;
+
+		for (const s of opcode_shifts) {
+			opcode |= s;
+		}
+
+		return [toHex(pattern.prefix), toHex(opcode)];
+	}
+
+	throw Error('Failed to match any pattern');
+}
+
 function inc_dec(mnemonic, tokens) {
 	let opcode = null;
 	let pattern = null;
@@ -117,7 +164,7 @@ function inc_dec(mnemonic, tokens) {
 		return [toHex(pattern.prefix), toHex(opcode)];
 	}
 
-	throw Error("Failed to match any pattern.");
+	throw Error('Failed to match any pattern.');
 }
 
 function toHex(value) {
@@ -125,3 +172,4 @@ function toHex(value) {
 }
 
 console.log(inc_dec('inc', ['(', 'iy', 0x00, ')']));
+console.log(and_cp_or_xor('and', ['a', 0xFF]));
