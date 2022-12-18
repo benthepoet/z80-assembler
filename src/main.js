@@ -14,6 +14,16 @@ const PATTERNS = {
 			pattern: ['(', 'hl', ')'],
 			prefix: 0x00,
 			base: 0x34
+		},
+		{
+			pattern: ['(', 'ix', 'dp', ')'],
+			prefix: 0xDD,
+			base: 0x34
+		},
+		{
+			pattern: ['(', 'iy', 'dp', ')'],
+			prefix: 0xFD,
+			base: 0x34
 		}
 	],
 	inc_dec_group_2: [
@@ -48,6 +58,10 @@ function match_group_1(token, sym) {
 		if (i === -1) return false;
 		else if (i === 6) i++;
 		opcode_shifts.push(i << 3);
+		return true;
+	}
+	else if (sym === 'dp') {
+		if (token < 0x00 || token > 0xFF) return false;
 		return true;
 	}
 
@@ -110,4 +124,4 @@ function toHex(value) {
 	return value.toString(16);
 }
 
-console.log(inc_dec('dec', ['(', 'hl', ')']));
+console.log(inc_dec('inc', ['(', 'iy', 0x00, ')']));
