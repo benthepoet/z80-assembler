@@ -1,11 +1,14 @@
 const MNEMONICS = {
 	and: and_cp_or_xor,
+	bit: bit_set_res,
 	cp: and_cp_or_xor,
 	dec: inc_dec,
 	inc: inc_dec,
 	or: and_cp_or_xor,
 	push: push_pop,
 	pop: push_pop,
+	res: bit_set_res,
+	set: bit_set_res,
 	xor: and_cp_or_xor
 };
 
@@ -35,6 +38,13 @@ const PATTERNS = {
 			pattern: ["a", "(", "iy", "dp", ")"],
 			prefix: 0xFD,
 			base: 0x86
+		}
+	],
+	bit_set_res_group_1: [
+		{
+			pattern: ["bt", "r'"],
+			prefix: 0xCB,
+			base: 0x00
 		}
 	],
 	inc_dec_group_1: [
@@ -122,6 +132,11 @@ function match_group_1(token, sym) {
 		if (token < 0x00 || token > 0xFF) return false;
 		return true;
 	}
+	else if (sym === "bt") {
+		if (token < 0 || token > 7) return false;
+		opcode_shifts.push(token << 3);
+		return true;
+	}
 
 	return token === sym;
 }
@@ -166,12 +181,28 @@ function and_cp_or_xor(mnemonic, tokens) {
 	let pattern = null;
 	if ((pattern = find_pattern(tokens, PATTERNS.and_cp_or_xor_group_1, match_group_1)) !== null) {
 		opcode = pattern.base;
-		if (mnemonic == "xor") opcode |= 8;
-		else if (mnemonic == "or") opcode |= 16;
-		else if (mnemonic == "cp") opcode |= 24;
+		if (mnemonic === "xor") opcode |= 8;
+		else if (mnemonic === "or") opcode |= 16;
+		else opcode |= 24;
 
 		opcode = apply_opcode_shifts(opcode);
 		return [to_hex(pattern.prefix), to_hex(opcode)];
+	}
+
+	throw Error("Failed to match any pattern.");
+}
+
+function bit_set_res(mnemonic, tokens) {
+	let opcode = null;
+	let pattern = null;
+	if ((pattern = find_pattern(tokens, PATTERNS.bit_set_res_group_1, match_group_1)) !== null) {
+		opcode = pattern.base;
+		if (mnemonic === "bit") opcode |= 64;
+		else if (mnemonic == "res") opcode |= 128;
+		else opcode |= 192;
+
+		opcode = apply_opcode_shifts(opcode);
+		return [to_hex(pattern.prefix), to_hex(opcode)]; 
 	}
 
 	throw Error("Failed to match any pattern.");
@@ -238,4 +269,5 @@ function to_hex(value) {
 }
 
 console.log(assemble("inc", ["(", "iy", 0x00, ")"]));
-console.log(assemble("and", ["a", "(", "iy", 0xFF, ")"]));
+console.log(assemble("and", ["a", "c"]));
+console.log(assemble("res", [2, "h"]));
