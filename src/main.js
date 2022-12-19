@@ -24,6 +24,57 @@ const MNEMONICS = {
 };
 
 const PATTERNS = {
+	add_adc_sub_sbc_group_1: [
+		{
+			pattern: ["a", "r'"],
+			prefix: 0x00,
+			base: 0x80
+		},
+		{
+			pattern: ["a", "n"],
+			prefix: 0x00,
+			base: 0xC0
+		},
+		{
+			pattern: ["a", "(", "hl", ")"],
+			prefix: 0x00,
+			base: 0x86
+		},
+		{
+			pattern: ["a", "(", "ix", "dp", ")"],
+			prefix: 0xDD,
+			base: 0x86
+		},
+		{
+			pattern: ["a", "(", "iy", "dp", ")"],
+			prefix: 0xFD,
+			base: 0x86
+		}
+	],
+	add_adc_sub_sbc_group_2: [
+		{
+			pattern: ["hl", "ss"],
+			prefix: 0xED,
+			base: 0x42
+		}
+	],
+	add_adc_sub_sbc_group_3: [
+		{
+			pattern: ["hl", "ss"],
+			prefix: 0x00,
+			base: 0x09
+		},
+		{
+			pattern: ["ix", "pp"],
+			prefix: 0xDD,
+			base: 0x09
+		},
+		{
+			pattern: ["iy", "rr"],
+			prefix: 0xFD,
+			base: 0x09
+		}
+	],
 	and_cp_or_xor_group_1: [
 		{
 			pattern: ["a", "r'"],
@@ -154,9 +205,11 @@ const PATTERNS = {
 };
 
 const MATCH_TABLES = {
-	qq: ["bc","de","hl","af"],
-	r: ["b","c","d","e","h","l","a"],
-	ss: ["bc","de","hl","sp"]
+	pp: ["bc", "de", "ix", "sp"],
+	qq: ["bc", "de", "hl", "af"],
+	r: ["b", "c", "d", "e", "h", "l", "a"],
+	rr: ["bc", "de", "iy", "sp"],
+	ss: ["bc", "de", "hl", "sp"]
 };
 
 let opcode_shifts = [];
@@ -190,8 +243,20 @@ function match_group_1(token, sym) {
 }
 
 function match_group_2(token, sym) {
-	if (sym === "qq") {
+	if (sym === "pp") {
+		let i = MATCH_TABLES.pp.indexOf(token);
+		if (i === -1) return false;
+		opcode_shifts.push(i << 4);
+		return true;
+	}
+	else if (sym === "qq") {
 		let i = MATCH_TABLES.qq.indexOf(token);
+		if (i === -1) return false;
+		opcode_shifts.push(i << 4);
+		return true;
+	}
+	else if (sym === "rr") {
+		let i = MATCH_TABLES.rr.indexOf(token);
 		if (i === -1) return false;
 		opcode_shifts.push(i << 4);
 		return true;
@@ -225,6 +290,26 @@ function find_pattern(tokens, patterns, match_fn) {
 }
 
 function add_adc_sub_sbc(mnemonic, tokens) {
+	let opcode = null;
+	let pattern = null;
+	if ((pattern = find_pattern(tokens, PATTERNS.add_adc_sub_sbc_group_1, match_group_1)) !== null) {
+		opcode = pattern.base;
+		if (mnemonic === "adc") opcode |= 8;
+		else if (mnemonic === "sub") opcode |= 16;
+		else if (mnemonic === "sbc") opcode |= 24;
+	}
+	else if (mnemonic === "add" && (pattern = find_pattern(tokens, PATTERNS.add_adc_sub_sbc_group_3, match_group_2)) !== null) {
+		opcode = pattern.base;
+	}
+	else if (mnemonic !== "sub" && (pattern = find_pattern(tokens, PATTERNS.add_adc_sub_sbc_group_2, match_group_2)) !== null) {
+		opcode = pattern.base;
+	}
+
+	if (opcode != null) {
+		opcode = apply_opcode_shifts(opcode);
+		return [to_hex(pattern.prefix), to_hex(opcode)];
+	}
+
 	throw Error("Failed to match any pattern.");
 }
 
