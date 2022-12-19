@@ -43,6 +43,7 @@ const MNEMONICS_1 = {
 	bit: bit_set_res,
 	cp: and_cp_or_xor,
 	dec: inc_dec,
+	ex: ex,
 	inc: inc_dec,
 	or: and_cp_or_xor,
 	push: push_pop,
@@ -162,6 +163,33 @@ const PATTERNS = {
 			base: 0x06
 		}
 	],
+	ex_group_1: [
+		{
+			pattern: ["de", "hl"],
+			prefix: 0x00,
+			base: 0xEB
+		},
+		{
+			pattern: ["af", "af'"],
+			prefix: 0x00,
+			base: 0x08
+		},
+		{
+			pattern: ["(", "sp", ")", "hl"],
+			prefix: 0x00,
+			base: 0xE3
+		},
+		{
+			pattern: ["(", "sp", ")", "ix"],
+			prefix: 0xDD,
+			base: 0xE3
+		},
+		{
+			pattern: ["(", "sp", ")", "iy"],
+			prefix: 0xFD,
+			base: 0xE3
+		}
+	],
 	im_group_1: [
 		{
 			pattern: ["1"],
@@ -268,6 +296,10 @@ const MATCH_TABLES = {
 };
 
 let opcode_shifts = [];
+
+function match_group_0(token, sym) {
+	return token === sym;
+}
 
 function match_group_1(token, sym) {
 	if (sym === "r" || sym === "r'") {
@@ -395,6 +427,17 @@ function bit_set_res(mnemonic, tokens) {
 
 		opcode = apply_opcode_shifts(opcode);
 		return [to_hex(pattern.prefix), to_hex(opcode)]; 
+	}
+
+	throw Error("Failed to match any pattern.");
+}
+
+function ex(mnemonic, tokens) {
+	let opcode = null;
+	let pattern = null;
+	if ((pattern = find_pattern(tokens, PATTERNS.ex_group_1, match_group_0)) !== null) {
+		opcode = pattern.base;
+		return [to_hex(pattern.prefix), to_hex(opcode)];
 	}
 
 	throw Error("Failed to match any pattern.");
