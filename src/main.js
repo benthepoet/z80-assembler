@@ -36,7 +36,7 @@ const MNEMONICS_0 = {
 	otdr: { prefix: 0xED, opcode: 0xBB } 
 };
 
-const MNEMONICS = {
+const MNEMONICS_1 = {
 	adc: add_adc_sub_sbc,
 	add: add_adc_sub_sbc,
 	and: and_cp_or_xor,
@@ -470,15 +470,18 @@ function apply_opcode_shifts(opcode) {
 }
 
 function assemble(mnemonic, tokens) {
-	for (const k of Object.keys(MNEMONICS_0)) {
-		if (mnemonic === k) {
-			const p = MNEMONICS_0[k];
-			return [to_hex(p.prefix), to_hex(p.opcode)];
+	for (const [key, value] of Object.entries(MNEMONICS_0)) {
+		if (mnemonic === key) {
+			return [to_hex(value.prefix), to_hex(value.opcode)];
 		}
 	}
 
-	const mnemonic_fn = find_mnemonic(mnemonic);
-	if (mnemonic_fn != null) return mnemonic_fn(mnemonic, tokens);
+	for (const [key, fn] of Object.entries(MNEMONICS_1)) {
+		if (mnemonic === key) {
+			return fn(mnemonic, tokens);
+		}
+	}
+
 	throw Error("Failed to match any mnemonic.");
 }
 
