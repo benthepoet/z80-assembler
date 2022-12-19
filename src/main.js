@@ -162,6 +162,23 @@ const PATTERNS = {
 			base: 0x06
 		}
 	],
+	im_group_1: [
+		{
+			pattern: ["1"],
+			prefix: 0xED,
+			base: 0x46
+		},
+		{
+			pattern: ["2"],
+			prefix: 0xED,
+			base: 0x56
+		},
+		{
+			pattern: ["3"],
+			prefix: 0xED,
+			base: 0x5E
+		}
+	],
 	inc_dec_group_1: [
 		{
 			pattern: ["r"],
