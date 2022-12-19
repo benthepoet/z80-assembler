@@ -1,3 +1,41 @@
+const MNEMONICS_0 = {
+	daa: { prefix: 0x00, opcode: 0x27 },
+	cpl: { prefix: 0x00, opcode: 0x2F },
+	neg: { prefix: 0xED, opcode: 0x44 },
+	ccf: { prefix: 0x00, opcode: 0x3F },
+	scf: { prefix: 0x00, opcode: 0x37 },
+	nop: { prefix: 0x00, opcode: 0x00 },
+	halt: { prefix: 0x00, opcode: 0x76 },
+	di: { prefix: 0x00, opcode: 0xF3 },
+	ei: { prefix: 0x00, opcode: 0xFB },
+	exx: { prefix: 0x00, opcode: 0xD9 },
+	ldi: { prefix: 0xED, opcode: 0xA0 },
+	ldir: { prefix: 0xED, opcode: 0xB0 },
+	ldd: { prefix: 0xED, opcode: 0xA8 },
+	lddr: { prefix: 0xED, opcode: 0xB8 },
+	cpi: { prefix: 0xED, opcode: 0xA1 },
+	cpir: { prefix: 0xED, opcode: 0xB1 },
+	cpd: { prefix: 0xED, opcode: 0xA9 },
+	cpdr: { prefix: 0xED, opcode: 0xB9 },
+	rlca: { prefix: 0x00, opcode: 0x07 },
+	rla: { prefix: 0x00, opcode: 0x17 },
+	rrca: { prefix: 0x00, opcode: 0x0F },
+	rra: { prefix: 0x00, opcode: 0x1F },
+	rld: { prefix: 0xED, opcode: 0x6F },
+	rrd: { prefix: 0xED, opcode: 0x67 },
+	reti: { prefix: 0xED, opcode: 0x4D },
+	retn: { prefix: 0xED, opcode: 0x45 },
+	ret: { prefix: 0x00, opcode: 0xC9 },
+	ini: { prefix: 0xED, opcode: 0xA2 },
+	inir: { prefix: 0xED, opcode: 0xB2 },
+	ind: { prefix: 0xED, opcode: 0xAA },
+	indr: { prefix: 0xED, opcode: 0xBA },
+	outi: { prefix: 0xED, opcode: 0xA3 },
+	otir: { prefix: 0xED, opcode: 0xB3 },
+	outd: { prefix: 0xED, opcode: 0xAB },
+	otdr: { prefix: 0xED, opcode: 0xBB } 
+};
+
 const MNEMONICS = {
 	adc: add_adc_sub_sbc,
 	add: add_adc_sub_sbc,
@@ -415,6 +453,13 @@ function apply_opcode_shifts(opcode) {
 }
 
 function assemble(mnemonic, tokens) {
+	for (const k of Object.keys(MNEMONICS_0)) {
+		if (mnemonic === k) {
+			const p = MNEMONICS_0[k];
+			return [to_hex(p.prefix), to_hex(p.opcode)];
+		}
+	}
+
 	const mnemonic_fn = find_mnemonic(mnemonic);
 	if (mnemonic_fn != null) return mnemonic_fn(mnemonic, tokens);
 	throw Error("Failed to match any mnemonic.");
