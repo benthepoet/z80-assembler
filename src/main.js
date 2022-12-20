@@ -379,7 +379,7 @@ function find_pattern(tokens, patterns, match_fn) {
 function add_adc_sub_sbc(mnemonic, tokens) {
 	let opcode = null;
 	let pattern = null;
-	if ((pattern = find_pattern(tokens, PATTERNS.add_adc_sub_sbc_group_1, match_group_1)) !== null) {
+	if (tokens[0] === "a" && (pattern = find_pattern(tokens, PATTERNS.add_adc_sub_sbc_group_1, match_group_1)) !== null) {
 		opcode = pattern.base;
 		if (mnemonic === "adc") opcode |= 8;
 		else if (mnemonic === "sub") opcode |= 16;
@@ -403,7 +403,7 @@ function add_adc_sub_sbc(mnemonic, tokens) {
 function and_cp_or_xor(mnemonic, tokens) {
 	let opcode = null;
 	let pattern = null;
-	if ((pattern = find_pattern(tokens, PATTERNS.and_cp_or_xor_group_1, match_group_1)) !== null) {
+	if (tokens[0] === "a" && (pattern = find_pattern(tokens, PATTERNS.and_cp_or_xor_group_1, match_group_1)) !== null) {
 		opcode = pattern.base;
 		if (mnemonic === "xor") opcode |= 8;
 		else if (mnemonic === "or") opcode |= 16;
@@ -513,9 +513,11 @@ function apply_opcode_shifts(opcode) {
 }
 
 function assemble(mnemonic, tokens) {
-	for (const [key, value] of Object.entries(MNEMONICS_0)) {
-		if (mnemonic === key) {
-			return [to_hex(value.prefix), to_hex(value.opcode)];
+	if (tokens.length === 0) {
+		for (const [key, value] of Object.entries(MNEMONICS_0)) {
+			if (mnemonic === key) {
+				return [to_hex(value.prefix), to_hex(value.opcode)];
+			}
 		}
 	}
 
