@@ -1,4 +1,4 @@
-const MNEMONICS_0 = {
+var MNEMONICS_0 = {
 	daa: { prefix: 0x00, opcode: 0x27 },
 	cpl: { prefix: 0x00, opcode: 0x2F },
 	neg: { prefix: 0xED, opcode: 0x44 },
@@ -36,7 +36,7 @@ const MNEMONICS_0 = {
 	otdr: { prefix: 0xED, opcode: 0xBB } 
 };
 
-const MNEMONICS_1 = {
+var MNEMONICS_1 = {
 	adc: add_adc_sub_sbc,
 	add: add_adc_sub_sbc,
 	and: and_cp_or_xor,
@@ -62,7 +62,7 @@ const MNEMONICS_1 = {
 	xor: and_cp_or_xor
 };
 
-const PATTERNS = {
+var PATTERNS = {
 	add_adc_sub_sbc_group_1: [
 		{
 			pattern: ["a", "r'"],
@@ -287,7 +287,7 @@ const PATTERNS = {
 	]
 };
 
-const MATCH_TABLES = {
+var MATCH_TABLES = {
 	pp: ["bc", "de", "ix", "sp"],
 	qq: ["bc", "de", "hl", "af"],
 	r: ["b", "c", "d", "e", "h", "l", "a"],
@@ -295,7 +295,7 @@ const MATCH_TABLES = {
 	ss: ["bc", "de", "hl", "sp"]
 };
 
-let opcode_shifts = [];
+var opcode_shifts = [];
 
 function match_group_0(token, sym) {
 	return token === sym;
@@ -303,7 +303,7 @@ function match_group_0(token, sym) {
 
 function match_group_1(token, sym) {
 	if (sym === "r" || sym === "r'") {
-		let i = MATCH_TABLES.r.indexOf(token);
+		var i = MATCH_TABLES.r.indexOf(token);
 		if (i === -1) return false;
 		else if (i === 6) i++;
 
@@ -330,26 +330,27 @@ function match_group_1(token, sym) {
 }
 
 function match_group_2(token, sym) {
+    var i;
 	if (sym === "pp") {
-		let i = MATCH_TABLES.pp.indexOf(token);
+		i = MATCH_TABLES.pp.indexOf(token);
 		if (i === -1) return false;
 		opcode_shifts.push(i << 4);
 		return true;
 	}
 	else if (sym === "qq") {
-		let i = MATCH_TABLES.qq.indexOf(token);
+		i = MATCH_TABLES.qq.indexOf(token);
 		if (i === -1) return false;
 		opcode_shifts.push(i << 4);
 		return true;
 	}
 	else if (sym === "rr") {
-		let i = MATCH_TABLES.rr.indexOf(token);
+		i = MATCH_TABLES.rr.indexOf(token);
 		if (i === -1) return false;
 		opcode_shifts.push(i << 4);
 		return true;
 	}
 	else if (sym === "ss") {
-		let i = MATCH_TABLES.ss.indexOf(token);
+		i = MATCH_TABLES.ss.indexOf(token);
 		if (i === -1) return false;
 		opcode_shifts.push(i << 4);
 		return true;
@@ -364,8 +365,8 @@ function find_pattern(tokens, patterns, match_fn) {
 		if (tokens.length !== p.pattern.length) continue;
 		opcode_shifts = [];
 
-		let matched = false;
-		for (let i = 0; i < tokens.length; i++) {
+		var matched = false;
+		for (var i = 0; i < tokens.length; i++) {
 			matched = match_fn(tokens[i], p.pattern[i]);
 			if (!matched) break;
 		}
@@ -377,8 +378,8 @@ function find_pattern(tokens, patterns, match_fn) {
 }
 
 function add_adc_sub_sbc(mnemonic, tokens) {
-	let opcode = null;
-	let pattern = null;
+	var opcode = null;
+	var pattern = null;
 	if (tokens[0] === "a" && (pattern = find_pattern(tokens, PATTERNS.add_adc_sub_sbc_group_1, match_group_1)) !== null) {
 		opcode = pattern.base;
 		if (mnemonic === "adc") opcode |= 8;
@@ -401,8 +402,8 @@ function add_adc_sub_sbc(mnemonic, tokens) {
 }
 
 function and_cp_or_xor(mnemonic, tokens) {
-	let opcode = null;
-	let pattern = null;
+	var opcode = null;
+	var pattern = null;
 	if (tokens[0] === "a" && (pattern = find_pattern(tokens, PATTERNS.and_cp_or_xor_group_1, match_group_1)) !== null) {
 		opcode = pattern.base;
 		if (mnemonic === "xor") opcode |= 8;
@@ -417,8 +418,8 @@ function and_cp_or_xor(mnemonic, tokens) {
 }
 
 function bit_set_res(mnemonic, tokens) {
-	let opcode = null;
-	let pattern = null;
+	var opcode = null;
+	var pattern = null;
 	if ((pattern = find_pattern(tokens, PATTERNS.bit_set_res_group_1, match_group_1)) !== null) {
 		opcode = pattern.base;
 		if (mnemonic === "bit") opcode |= 64;
@@ -432,9 +433,21 @@ function bit_set_res(mnemonic, tokens) {
 	throw Error("Failed to match any pattern.");
 }
 
+function djnz_jp_jr(mnemonic, tokens) {
+    if (mnemonic === "djnz") {
+        
+    }
+    else if (mnemonic === "jp") {
+    }
+    else {
+    }
+    
+    throw Error("Failed to match any pattern.");
+}
+
 function ex(mnemonic, tokens) {
-	let opcode = null;
-	let pattern = null;
+	var opcode = null;
+	var pattern = null;
 	if ((pattern = find_pattern(tokens, PATTERNS.ex_group_1, match_group_0)) !== null) {
 		opcode = pattern.base;
 		return [to_hex(pattern.prefix), to_hex(opcode)];
@@ -444,8 +457,8 @@ function ex(mnemonic, tokens) {
 }
 
 function inc_dec(mnemonic, tokens) {
-	let opcode = null;
-	let pattern = null;
+	var opcode = null;
+	var pattern = null;
 	if ((pattern = find_pattern(tokens, PATTERNS.inc_dec_group_1, match_group_1)) !== null) {
 		opcode = pattern.base;
 		if (mnemonic === "dec") opcode |= 1;
@@ -464,8 +477,8 @@ function inc_dec(mnemonic, tokens) {
 }
 
 function push_pop(mnemonic, tokens) {
-	let opcode = null;
-	let pattern = null;
+	var opcode = null;
+	var pattern = null;
 	if ((pattern = find_pattern(tokens, PATTERNS.push_pop_group_1, match_group_2)) !== null) {
 		opcode = pattern.base;
 		if (mnemonic === "pop") opcode |= 4;
@@ -478,8 +491,8 @@ function push_pop(mnemonic, tokens) {
 }
 
 function rlc_rl_rrc_rr_sla_sra_srl(mnemonic, tokens) {
-	let opcode = null;
-	let pattern = null;
+	var opcode = null;
+	var pattern = null;
 	if ((pattern = find_pattern(tokens, PATTERNS.rlc_rl_rrc_rr_sla_sra_srl_group_1, match_group_1)) !== null) {
 		opcode = pattern.base;
 		if (mnemonic === "rrc") opcode |= 8;
@@ -496,17 +509,9 @@ function rlc_rl_rrc_rr_sla_sra_srl(mnemonic, tokens) {
 	throw Error("Failed to match any pattern.");
 }
 
-function find_mnemonic(mnemonic) {
-	for (const k of Object.keys(MNEMONICS)) {
-		if (mnemonic === k) return MNEMONICS[k];
-	}
-
-	return null;
-}
-
 function apply_opcode_shifts(opcode) {
-	for (const s of opcode_shifts) {
-		opcode |= s;
+	for (var i = 0; i < opcode_shifts.length; i++) {
+		opcode |= opcode_shifts[i];
 	}
 
 	return opcode;
@@ -514,18 +519,12 @@ function apply_opcode_shifts(opcode) {
 
 function assemble(mnemonic, tokens) {
 	if (tokens.length === 0) {
-		for (const [key, value] of Object.entries(MNEMONICS_0)) {
-			if (mnemonic === key) {
-				return [to_hex(value.prefix), to_hex(value.opcode)];
-			}
-		}
+        var mnem0 = MNEMONICS_0[mnemonic];
+        if (mnem0) return [to_hex(mnem0.prefix), to_hex(mnem0.opcode)];
 	}
 
-	for (const [key, fn] of Object.entries(MNEMONICS_1)) {
-		if (mnemonic === key) {
-			return fn(mnemonic, tokens);
-		}
-	}
+    var mnem1 = MNEMONICS_1[mnemonic];
+    if (mnem1) return mnem1(mnemonic, tokens);
 
 	throw Error("Failed to match any mnemonic.");
 }
