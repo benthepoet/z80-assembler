@@ -43,8 +43,11 @@ var MNEMONICS_1 = {
 	bit: bit_set_res,
 	cp: and_cp_or_xor,
 	dec: inc_dec,
+	djnz: djnz_jp_jr,
 	ex: ex,
 	inc: inc_dec,
+	jp: djnz_jp_jr,
+	jr: djnz_jp_jr,
 	or: and_cp_or_xor,
 	push: push_pop,
 	pop: push_pop,
@@ -161,6 +164,52 @@ var PATTERNS = {
 			pattern: ["bt", "(", "iy", "dp", ")"],
 			prefix: 0xFDCB,
 			base: 0x06
+		}
+	],
+	djnz_jp_jr_group_1: [
+		{
+			pattern: ["n"],
+			prefix: 0x00,
+			base: 0x10
+		}
+	],
+	djnz_jp_jr_group_2: [
+		{
+			pattern: ["nn"],
+			prefix: 0x00,
+			base: 0xC3
+		},
+		{
+			pattern: ["cc", "nn"],
+			prefix: 0x00,
+			base: 0xC2
+		},
+		{
+			pattern: ["(", "hl", ")"],
+			prefix: 0x00,
+			base: 0xE9
+		},
+		{
+			pattern: ["(", "ix", ")"],
+			prefix: 0xDD,
+			base: 0xE9
+		},
+		{
+			pattern: ["(", "iy", ")"],
+			prefix: 0xFD,
+			base: 0xE9
+		}
+	],
+	djnz_jp_jr_group_3: [
+		{
+			pattern: ["n"],
+			prefix: 0x00,
+			base: 0x18
+		},
+		{
+			pattern: ["vv", "n"],
+			prefix: 0x00,
+			base: 0x20
 		}
 	],
 	ex_group_1: [
@@ -288,11 +337,13 @@ var PATTERNS = {
 };
 
 var MATCH_TABLES = {
+	cc: ["nz", "z", "nc", "c", "po", "pe", "p", "m"],
 	pp: ["bc", "de", "ix", "sp"],
 	qq: ["bc", "de", "hl", "af"],
 	r: ["b", "c", "d", "e", "h", "l", "a"],
 	rr: ["bc", "de", "iy", "sp"],
-	ss: ["bc", "de", "hl", "sp"]
+	ss: ["bc", "de", "hl", "sp"],
+	vv: ["nz", "z", "nc", "c"]
 };
 
 var opcode_shifts = [];
@@ -302,8 +353,9 @@ function match_group_0(token, sym) {
 }
 
 function match_group_1(token, sym) {
+	var i;
 	if (sym === "r" || sym === "r'") {
-		var i = MATCH_TABLES.r.indexOf(token);
+		i = MATCH_TABLES.r.indexOf(token);
 		if (i === -1) return false;
 		else if (i === 6) i++;
 
@@ -330,7 +382,7 @@ function match_group_1(token, sym) {
 }
 
 function match_group_2(token, sym) {
-    var i;
+	var i;
 	if (sym === "pp") {
 		i = MATCH_TABLES.pp.indexOf(token);
 		if (i === -1) return false;
@@ -359,6 +411,32 @@ function match_group_2(token, sym) {
 	return token === sym;
 }
 
+function match_group_3(token, sym) {
+	var i;
+	if (sym === "cc") {
+		i = MATCH_TABLES.cc.indexOf(token);
+		if (i === -1) return false;
+		opcode_shifts.push(i << 3);
+		return true;
+	}
+	else if (sym === "vv") {
+		i = MATCH_TABLES.vv.indexOf(token);
+		if (i === -1) return false;
+		opcode_shifts.push(i << 3);
+		return true;
+	}
+	else if (sym === "nn") {
+		if (token < 0x00 || token > 0xFFFF) return false;
+		return true;
+	}
+        else if (sym === "n") {
+                if (token < 0x00 || token > 0xFF) return false;
+                return true;
+        }
+
+	return token === sym;
+}
+
 function find_pattern(tokens, patterns, match_fn) {
 	for (const p of patterns)
 	{
@@ -380,7 +458,7 @@ function find_pattern(tokens, patterns, match_fn) {
 function add_adc_sub_sbc(mnemonic, tokens) {
 	var opcode = null;
 	var pattern = null;
-	if (tokens[0] === "a" && (pattern = find_pattern(tokens, PATTERNS.add_adc_sub_sbc_group_1, match_group_1)) !== null) {
+	if ((pattern = find_pattern(tokens, PATTERNS.add_adc_sub_sbc_group_1, match_group_1)) !== null) {
 		opcode = pattern.base;
 		if (mnemonic === "adc") opcode |= 8;
 		else if (mnemonic === "sub") opcode |= 16;
@@ -404,7 +482,7 @@ function add_adc_sub_sbc(mnemonic, tokens) {
 function and_cp_or_xor(mnemonic, tokens) {
 	var opcode = null;
 	var pattern = null;
-	if (tokens[0] === "a" && (pattern = find_pattern(tokens, PATTERNS.and_cp_or_xor_group_1, match_group_1)) !== null) {
+	if ((pattern = find_pattern(tokens, PATTERNS.and_cp_or_xor_group_1, match_group_1)) !== null) {
 		opcode = pattern.base;
 		if (mnemonic === "xor") opcode |= 8;
 		else if (mnemonic === "or") opcode |= 16;
@@ -434,15 +512,24 @@ function bit_set_res(mnemonic, tokens) {
 }
 
 function djnz_jp_jr(mnemonic, tokens) {
-    if (mnemonic === "djnz") {
-        
-    }
-    else if (mnemonic === "jp") {
-    }
-    else {
-    }
-    
-    throw Error("Failed to match any pattern.");
+	var opcode = null;
+	var pattern = null;
+	if (mnemonic === "djnz" && (pattern = find_pattern(tokens, PATTERNS.djnz_jp_jr_group_1, match_group_3)) !== null) {
+		opcode = pattern.base;
+	}
+	else if (mnemonic === "jp" && (pattern = find_pattern(tokens, PATTERNS.djnz_jp_jr_group_2, match_group_3)) !== null) {
+		opcode = pattern.base;
+	}
+	else if (mnemonic === "jr" && (pattern = find_pattern(tokens, PATTERNS.djnz_jp_jr_group_3, match_group_3)) !== null) {
+		opcode = pattern.base;
+	}
+
+	if (opcode !== null) {
+		opcode = apply_opcode_shifts(opcode);
+		return [to_hex(pattern.prefix), to_hex(opcode)];
+	}
+
+	throw Error("Failed to match any pattern.");
 }
 
 function ex(mnemonic, tokens) {
