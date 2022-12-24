@@ -372,6 +372,10 @@ function match_group_1(token, sym) {
 		if (token < 0x00 || token > 0xFF) return false;
 		return true;
 	}
+	else if (sym === "nn") {
+                if (token < 0x00 || token > 0xFFFF) return false;
+                return true;
+        }
 	else if (sym === "bt") {
 		if (token < 0 || token > 7) return false;
 		opcode_shifts.push(token << 3);
@@ -407,6 +411,10 @@ function match_group_2(token, sym) {
 		opcode_shifts.push(i << 4);
 		return true;
 	}
+       else if (sym === "nn") {
+                if (token < 0x00 || token > 0xFFFF) return false;
+                return true;
+        }
 
 	return token === sym;
 }
