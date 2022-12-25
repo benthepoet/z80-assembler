@@ -1,6 +1,9 @@
 var STATE = {
+	mnemonic: null,
 	operand: null,
+	operand_length: null,
 	displacement: null,
+	opcode_shifts: [],
 	tokens: []
 };
 
@@ -352,8 +355,6 @@ var MATCH_TABLES = {
 	vv: ["nz", "z", "nc", "c"]
 };
 
-var opcode_shifts = [];
-
 function match_group_0(token, sym) {
 	return token === sym;
 }
@@ -365,8 +366,8 @@ function match_group_1(token, sym) {
 		if (i === -1) return false;
 		else if (i === 6) i++;
 
-		if (sym === "r") opcode_shifts.push(i << 3);
-		else if (sym === "r'") opcode_shifts.push(i);
+		if (sym === "r") STATE.opcode_shifts.push(i << 3);
+		else if (sym === "r'") STATE.opcode_shifts.push(i);
 
 		return true;
 	}
@@ -375,16 +376,18 @@ function match_group_1(token, sym) {
 		return true;
 	}
 	else if (sym === "n") {
-		if (token < 0x00 || token > 0xFF) return false;
+		if (STATE.operand < 0x00 || STATE.operand > 0xFF) return false;
+		STATE.operand_length = 1;
 		return true;
 	}
 	else if (sym === "nn") {
-                if (token < 0x00 || token > 0xFFFF) return false;
+                if (STATE.operand < 0x00 || STATE.operand > 0xFFFF) return false;
+		STATE.operand_length = 2;
                 return true;
         }
 	else if (sym === "bt") {
 		if (token < 0 || token > 7) return false;
-		opcode_shifts.push(token << 3);
+		STATE.opcode_shifts.push(token << 3);
 		return true;
 	}
 
@@ -396,25 +399,25 @@ function match_group_2(token, sym) {
 	if (sym === "pp") {
 		i = MATCH_TABLES.pp.indexOf(token);
 		if (i === -1) return false;
-		opcode_shifts.push(i << 4);
+		STATE.opcode_shifts.push(i << 4);
 		return true;
 	}
 	else if (sym === "qq") {
 		i = MATCH_TABLES.qq.indexOf(token);
 		if (i === -1) return false;
-		opcode_shifts.push(i << 4);
+		STATE.opcode_shifts.push(i << 4);
 		return true;
 	}
 	else if (sym === "rr") {
 		i = MATCH_TABLES.rr.indexOf(token);
 		if (i === -1) return false;
-		opcode_shifts.push(i << 4);
+		STATE.opcode_shifts.push(i << 4);
 		return true;
 	}
 	else if (sym === "ss") {
 		i = MATCH_TABLES.ss.indexOf(token);
 		if (i === -1) return false;
-		opcode_shifts.push(i << 4);
+		STATE.opcode_shifts.push(i << 4);
 		return true;
 	}
        else if (sym === "nn") {
@@ -430,13 +433,13 @@ function match_group_3(token, sym) {
 	if (sym === "cc") {
 		i = MATCH_TABLES.cc.indexOf(token);
 		if (i === -1) return false;
-		opcode_shifts.push(i << 3);
+		STATE.opcode_shifts.push(i << 3);
 		return true;
 	}
 	else if (sym === "vv") {
 		i = MATCH_TABLES.vv.indexOf(token);
 		if (i === -1) return false;
-		opcode_shifts.push(i << 3);
+		STATE.opcode_shifts.push(i << 3);
 		return true;
 	}
 	else if (sym === "nn") {
@@ -455,7 +458,8 @@ function find_pattern(tokens, patterns, match_fn) {
 	for (const p of patterns)
 	{
 		if (tokens.length !== p.pattern.length) continue;
-		opcode_shifts = [];
+		STATE.operand_length = null;
+		STATE.opcode_shifts = [];
 
 		var matched = false;
 		for (var i = 0; i < tokens.length; i++) {
@@ -611,21 +615,21 @@ function rlc_rl_rrc_rr_sla_sra_srl(mnemonic, tokens) {
 }
 
 function apply_opcode_shifts(opcode) {
-	for (var i = 0; i < opcode_shifts.length; i++) {
-		opcode |= opcode_shifts[i];
+	for (var i = 0; i < STATE.opcode_shifts.length; i++) {
+		opcode |= STATE.opcode_shifts[i];
 	}
 
 	return opcode;
 }
 
-function assemble(mnemonic, tokens) {
+function lookup_opcode(mnemonic, tokens) {
 	if (tokens.length === 0) {
-        var mnem0 = MNEMONICS_0[mnemonic];
-        if (mnem0) return [to_hex(mnem0.prefix), to_hex(mnem0.opcode)];
+        	var mnem0 = MNEMONICS_0[mnemonic];
+        	if (mnem0) return [to_hex(mnem0.prefix), to_hex(mnem0.opcode)];
 	}
 
-    var mnem1 = MNEMONICS_1[mnemonic];
-    if (mnem1) return mnem1(mnemonic, tokens);
+	var mnem1 = MNEMONICS_1[mnemonic];
+	if (mnem1) return mnem1(mnemonic, tokens);
 
 	throw Error("Failed to match any mnemonic.");
 }
@@ -635,8 +639,12 @@ function to_hex(value) {
 }
 
 function parse(str) {
+	STATE.mnemonic = null;
+	STATE.operand = null;
 	STATE.tokens = [];
+
 	var current = ''
+
 	for (var i = 0; i < str.length; i++) {
 		var sep = str[i] === ' ' || str[i] === ',' || str[i] === '\n' || str[i] === '(' || str[i] === ')' || str[i] === '+';
 		if (sep) {
@@ -657,6 +665,17 @@ function parse(str) {
 		push_token(current);
 	}
 
+	STATE.mnemonic = STATE.tokens.shift();
+
+	return STATE;
+}
+
+function assemble(str) {
+	parse(str);
+	return lookup_opcode(STATE.mnemonic, STATE.tokens);
+}
+
+function get_state() {
 	return STATE;
 }
 
@@ -672,4 +691,5 @@ function push_token(token) {
 }
 
 exports.assemble = assemble;
+exports.get_state = get_state;
 exports.parse = parse;
