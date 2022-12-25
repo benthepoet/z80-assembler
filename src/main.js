@@ -1,5 +1,6 @@
 var STATE = {
 	mnemonic: null,
+	opcode: null,
 	operand: null,
 	operand_length: null,
 	displacement: null,
@@ -76,111 +77,35 @@ var MNEMONICS_1 = {
 
 var PATTERNS = {
 	add_adc_sub_sbc_group_1: [
-		{
-			pattern: ["a", "r'"],
-			prefix: 0x00,
-			base: 0x80
-		},
-		{
-			pattern: ["a", "n"],
-			prefix: 0x00,
-			base: 0xC0
-		},
-		{
-			pattern: ["a", "(", "hl", ")"],
-			prefix: 0x00,
-			base: 0x86
-		},
-		{
-			pattern: ["a", "(", "ix", "dp", ")"],
-			prefix: 0xDD,
-			base: 0x86
-		},
-		{
-			pattern: ["a", "(", "iy", "dp", ")"],
-			prefix: 0xFD,
-			base: 0x86
-		}
+		[0x00, 0x80, ["a", "r'"]],
+		[0x00, 0xC0, ["a", "n"]],
+		[0x00, 0x86, ["a", "(", "hl", ")"]],
+		[0xDD, 0x86, ["a", "(", "ix", "+", "dp", ")"]],
+		[0xFD, 0x86, ["a", "(", "iy", "+", "dp", ")"]]
 	],
 	add_adc_sub_sbc_group_2: [
-		{
-			pattern: ["hl", "ss"],
-			prefix: 0xED,
-			base: 0x42
-		}
+		[0xED, 0x42, ["hl", "ss"]]
 	],
 	add_adc_sub_sbc_group_3: [
-		{
-			pattern: ["hl", "ss"],
-			prefix: 0x00,
-			base: 0x09
-		},
-		{
-			pattern: ["ix", "pp"],
-			prefix: 0xDD,
-			base: 0x09
-		},
-		{
-			pattern: ["iy", "rr"],
-			prefix: 0xFD,
-			base: 0x09
-		}
+		[0x00, 0x09, ["hl", "ss"]],
+		[0xDD, 0x09, ["ix", "pp"]],
+		[0xFD, 0x09, ["iy", "rr"]]
 	],
 	and_cp_or_xor_group_1: [
-		{
-			pattern: ["a", "r'"],
-			prefix: 0x00,
-			base: 0xA0
-		},
-		{
-			pattern: ["a", "n"],
-			prefix: 0x00,
-			base: 0xE6
-		},
-		{
-			pattern: ["a", "(", "hl", ")"],
-			prefix: 0x00,
-			base: 0xA6
-		},
-		{
-			pattern: ["a", "(", "ix", "dp", ")"],
-			prefix: 0xDD,
-			base: 0xA6
-		},
-		{
-			pattern: ["a", "(", "iy", "dp", ")"],
-			prefix: 0xFD,
-			base: 0x86
-		}
+		[0x00, 0xA0, ["a", "r'"]]
+		[0x00, 0xE6, ["a", "n"]]
+		[0x00, 0xA6, ["a", "(", "hl", ")"]],
+		[0xDD, 0xA6, ["a", "(", "ix", "+", "dp", ")"]],
+		[0xFD, 0x86, ["a", "(", "iy", "+", "dp", ")"]]
 	],
 	bit_set_res_group_1: [
-		{
-			pattern: ["bt", "r'"],
-			prefix: 0xCB,
-			base: 0x00
-		},
-		{
-			pattern: ["bt", "(", "hl", ")"],
-			prefix: 0xCB,
-			base: 0x06
-		},
-		{
-			pattern: ["bt", "(", "ix", "dp", ")"],
-			prefix: 0xDDCB,
-			base: 0x06
-		},
-		{
-			pattern: ["bt", "(", "iy", "dp", ")"],
-			prefix: 0xFDCB,
-			base: 0x06
-		}
+		[0xCB, 0x00, ["bt", "r'"]],
+		[0xCB, 0x06, ["bt", "(", "hl", ")"]],
+		[0xDDCB, 0x06, ["bt", "(", "ix", "+", "dp", ")"]],
+		[0xFDCB, 0x06, ["bt", "(", "iy", "+", "dp", ")"]]
 	],
 	djnz_jp_jr_group_1: [
-		{
-			pattern: ["n"],
-			prefix: 0x00,
-			base: 0x10
-		}
+		[0x00, 0x10, ["n"]]
 	],
 	djnz_jp_jr_group_2: [
 		{
@@ -288,38 +213,14 @@ var PATTERNS = {
 		}
 	],
 	inc_dec_group_2: [
-		{
-			pattern: ["ss"],
-			prefix: 0x00,
-			base: 0x03
-		},
-		{
-			pattern: ["ix"],
-			prefix: 0xDD,
-			base: 0x23
-		},
-		{
-			pattern: ["iy"],
-			prefix: 0xFD,
-			base: 0x23
-		}
+		[0x00, 0x03, ["ss"]],
+		[0xDD, 0x23, ["ix"]],
+		[0xFD, 0x23, ["iy"]]
 	],
 	push_pop_group_1: [
-		{
-			pattern: ["qq"],
-			prefix: 0x00,
-			base: 0xC1
-		},
-		{
-			pattern: ["ix"],
-			prefix: 0xDD,
-			base: 0xE1
-		},
-		{
-			pattern: ["iy"],
-			prefix: 0xFD,
-			base: 0xE1
-		}
+		[0x00, 0xC1, ["qq"]],
+		[0xDD, 0xE1, ["ix"]],
+		[0xFD, 0xE1, ["iy"]]
 	],
 	rlc_rl_rrc_rr_sla_sra_srl_group_1: [
 		{
