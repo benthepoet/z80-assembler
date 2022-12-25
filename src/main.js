@@ -1,3 +1,9 @@
+var STATE = {
+	operand: null,
+	displacement: null,
+	tokens: []
+};
+
 var MNEMONICS_0 = {
 	daa: { prefix: 0x00, opcode: 0x27 },
 	cpl: { prefix: 0x00, opcode: 0x2F },
@@ -628,4 +634,42 @@ function to_hex(value) {
 	return value.toString(16);
 }
 
+function parse(str) {
+	STATE.tokens = [];
+	var current = ''
+	for (var i = 0; i < str.length; i++) {
+		var sep = str[i] === ' ' || str[i] === ',' || str[i] === '\n' || str[i] === '(' || str[i] === ')' || str[i] === '+';
+		if (sep) {
+			if (current !== '') {
+				push_token(current);
+				current = '';
+			}
+			if (str[i] === '(' || str[i] === ')' || str[i] === '+') {
+				push_token(str[i]);
+			}
+		}
+		else {
+			current += str[i];
+		} 		
+	}
+
+	if (current !== '') {
+		push_token(current);
+	}
+
+	return STATE;
+}
+
+function push_token(token) {
+	if (token[0] === '$') {
+		var value = parseInt(token.substring(1), 16);
+		STATE.operand = value;
+		STATE.tokens.push('nn');
+	}
+	else {
+		STATE.tokens.push(token);
+	} 
+}
+
 exports.assemble = assemble;
+exports.parse = parse;
