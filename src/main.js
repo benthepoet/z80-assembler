@@ -55,6 +55,7 @@ var MNEMONICS_1 = {
 	dec: inc_dec,
 	djnz: djnz_jp_jr,
 	ex: ex,
+	im: im,
 	inc: inc_dec,
 	jp: djnz_jp_jr,
 	jr: djnz_jp_jr,
@@ -360,11 +361,18 @@ function djnz_jp_jr(mnemonic, tokens) {
 }
 
 function ex(mnemonic, tokens) {
-	var opcode = null;
 	var pattern = null;
 	if ((pattern = find_pattern(tokens, PATTERNS.ex_group_1, match_group_0)) !== null) {
-		opcode = pattern[1];
-		return [pattern[0], opcode];
+		return [pattern[0], pattern[1]];
+	}
+
+	throw Error("Failed to match any pattern.");
+}
+
+function im() {
+	var pattern = null;
+	if ((pattern = find_pattern(STATE.tokens, PATTERNS.im_group_1, match_group_0)) !== null) {
+		return [pattern[0], pattern[1]];
 	}
 
 	throw Error("Failed to match any pattern.");
@@ -494,6 +502,11 @@ function assemble(str) {
 		var assembled = STATE.opcode[0] << 8;
 		assembled |= STATE.opcode[1];
 
+		if (STATE.displacement !== null) {
+			assembled <<= 8;
+			assembled |= STATE.displacement;
+		}
+
 		if (STATE.operand !== null) {
 			assembled <<= STATE.operand_length * 8;
 			assembled |= STATE.operand;
@@ -510,12 +523,19 @@ function get_state() {
 function push_token(token) {
 	if (token[0] === '$') {
 		var value = parseInt(token.substring(1), 16);
-		STATE.operand = value;
-		STATE.tokens.push('nn');
+		var tlen = STATE.tokens.length;
+		if (tlen > 0 && STATE.tokens[tlen - 1] === "+") {
+			STATE.displacement = value;
+			STATE.tokens.push('dp');
+		}
+		else {
+			STATE.operand = value;
+			STATE.tokens.push('nn');
+		}
 	}
 	else {
 		STATE.tokens.push(token);
-	} 
+	}
 }
 
 exports.assemble = assemble;
