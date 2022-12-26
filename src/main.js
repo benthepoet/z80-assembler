@@ -92,8 +92,8 @@ var PATTERNS = {
 		[0xFD, 0x09, ["iy", "rr"]]
 	],
 	and_cp_or_xor_group_1: [
-		[0x00, 0xA0, ["a", "r'"]]
-		[0x00, 0xE6, ["a", "n"]]
+		[0x00, 0xA0, ["a", "r'"]],
+		[0x00, 0xE6, ["a", "n"]],
 		[0x00, 0xA6, ["a", "(", "hl", ")"]],
 		[0xDD, 0xA6, ["a", "(", "ix", "+", "dp", ")"]],
 		[0xFD, 0x86, ["a", "(", "iy", "+", "dp", ")"]]
@@ -108,109 +108,33 @@ var PATTERNS = {
 		[0x00, 0x10, ["n"]]
 	],
 	djnz_jp_jr_group_2: [
-		{
-			pattern: ["nn"],
-			prefix: 0x00,
-			base: 0xC3
-		},
-		{
-			pattern: ["cc", "nn"],
-			prefix: 0x00,
-			base: 0xC2
-		},
-		{
-			pattern: ["(", "hl", ")"],
-			prefix: 0x00,
-			base: 0xE9
-		},
-		{
-			pattern: ["(", "ix", ")"],
-			prefix: 0xDD,
-			base: 0xE9
-		},
-		{
-			pattern: ["(", "iy", ")"],
-			prefix: 0xFD,
-			base: 0xE9
-		}
+		[0x00, 0xC3, ["nn"]],
+		[0x00, 0xC2, ["cc", "nn"]],
+		[0x00, 0xE9, ["(", "hl", ")"]]
+		[0xDD, 0xE9, ["(", "ix", ")"]],
+		[0xFD, 0xE9, ["(", "iy", ")"]]
 	],
 	djnz_jp_jr_group_3: [
-		{
-			pattern: ["n"],
-			prefix: 0x00,
-			base: 0x18
-		},
-		{
-			pattern: ["vv", "n"],
-			prefix: 0x00,
-			base: 0x20
-		}
+		[0x00, 0x18, ["n"]],
+		[0x00, 0x20, ["vv", "n"]]
 	],
 	ex_group_1: [
-		{
-			pattern: ["de", "hl"],
-			prefix: 0x00,
-			base: 0xEB
-		},
-		{
-			pattern: ["af", "af'"],
-			prefix: 0x00,
-			base: 0x08
-		},
-		{
-			pattern: ["(", "sp", ")", "hl"],
-			prefix: 0x00,
-			base: 0xE3
-		},
-		{
-			pattern: ["(", "sp", ")", "ix"],
-			prefix: 0xDD,
-			base: 0xE3
-		},
-		{
-			pattern: ["(", "sp", ")", "iy"],
-			prefix: 0xFD,
-			base: 0xE3
-		}
+		[0x00, 0xEB, ["de", "hl"]],
+		[0x00, 0x08, ["af", "af'"]],
+		[0x00, 0xE3, ["(", "sp", ")", "hl"]],
+		[0xDD, 0xE3, ["(", "sp", ")", "ix"]],
+		[0xFD, 0xE3, ["(", "sp", ")", "iy"]]
 	],
 	im_group_1: [
-		{
-			pattern: ["1"],
-			prefix: 0xED,
-			base: 0x46
-		},
-		{
-			pattern: ["2"],
-			prefix: 0xED,
-			base: 0x56
-		},
-		{
-			pattern: ["3"],
-			prefix: 0xED,
-			base: 0x5E
-		}
+		[0xED, 0x46, ["1"]],
+		[0xED, 0x56, ["2"]],
+		[0xED, 0x5E, ["3"]]
 	],
 	inc_dec_group_1: [
-		{
-			pattern: ["r"],
-			prefix: 0x00,
-			base: 0x04
-		},
-		{
-			pattern: ["(", "hl", ")"],
-			prefix: 0x00,
-			base: 0x34
-		},
-		{
-			pattern: ["(", "ix", "dp", ")"],
-			prefix: 0xDD,
-			base: 0x34
-		},
-		{
-			pattern: ["(", "iy", "dp", ")"],
-			prefix: 0xFD,
-			base: 0x34
-		}
+		[0x00, 0x04, ["r"]],
+		[0x00, 0x34, ["(", "hl", ")"]],
+		[0xDD, 0x34, ["(", "ix", "+", "dp", ")"]],
+		[0xFD, 0x34, ["(", "iy", "+", "dp", ")"]]
 	],
 	inc_dec_group_2: [
 		[0x00, 0x03, ["ss"]],
@@ -223,26 +147,10 @@ var PATTERNS = {
 		[0xFD, 0xE1, ["iy"]]
 	],
 	rlc_rl_rrc_rr_sla_sra_srl_group_1: [
-		{
-			pattern: ["r'"],
-			prefix: 0xCB,
-			base: 0x00
-		},
-		{
-			pattern: ["(", "hl", ")"],
-			prefix: 0xCB,
-			base: 0x06
-		},
-		{
-			pattern: ["(", "ix", "dp", ")"],
-			prefix: 0xDDCB,
-			base: 0x06
-		},
-		{
-			pattern: ["(", "iy", "dp", ")"],
-			prefix: 0xFDCB,
-			base: 0x06
-		}
+		[0xCB, 0x00, ["r'"]],
+		[0xCB, 0x06, ["(", "hl", ")"]],
+		[0xDDCB, 0x06, ["(", "ix", "+", "dp", ")"]],
+		[0xFDCB, 0x06, ["(", "iy", "+", "dp", ")"]]
 	]
 };
 
@@ -358,13 +266,13 @@ function match_group_3(token, sym) {
 function find_pattern(tokens, patterns, match_fn) {
 	for (const p of patterns)
 	{
-		if (tokens.length !== p.pattern.length) continue;
+		if (tokens.length !== p[2].length) continue;
 		STATE.operand_length = null;
 		STATE.opcode_shifts = [];
 
 		var matched = false;
 		for (var i = 0; i < tokens.length; i++) {
-			matched = match_fn(tokens[i], p.pattern[i]);
+			matched = match_fn(tokens[i], p[2][i]);
 			if (!matched) break;
 		}
 
@@ -378,21 +286,21 @@ function add_adc_sub_sbc(mnemonic, tokens) {
 	var opcode = null;
 	var pattern = null;
 	if ((pattern = find_pattern(tokens, PATTERNS.add_adc_sub_sbc_group_1, match_group_1)) !== null) {
-		opcode = pattern.base;
+		opcode = pattern[1];
 		if (mnemonic === "adc") opcode |= 8;
 		else if (mnemonic === "sub") opcode |= 16;
 		else if (mnemonic === "sbc") opcode |= 24;
 	}
 	else if (mnemonic === "add" && (pattern = find_pattern(tokens, PATTERNS.add_adc_sub_sbc_group_3, match_group_2)) !== null) {
-		opcode = pattern.base;
+		opcode = pattern[1];
 	}
 	else if (mnemonic !== "sub" && (pattern = find_pattern(tokens, PATTERNS.add_adc_sub_sbc_group_2, match_group_2)) !== null) {
-		opcode = pattern.base;
+		opcode = pattern[1];
 	}
 
 	if (opcode != null) {
 		opcode = apply_opcode_shifts(opcode);
-		return [to_hex(pattern.prefix), to_hex(opcode)];
+		return [pattern[0], opcode];
 	}
 
 	throw Error("Failed to match any pattern.");
@@ -402,13 +310,13 @@ function and_cp_or_xor(mnemonic, tokens) {
 	var opcode = null;
 	var pattern = null;
 	if ((pattern = find_pattern(tokens, PATTERNS.and_cp_or_xor_group_1, match_group_1)) !== null) {
-		opcode = pattern.base;
+		opcode = pattern[1];
 		if (mnemonic === "xor") opcode |= 8;
 		else if (mnemonic === "or") opcode |= 16;
 		else opcode |= 24;
 
 		opcode = apply_opcode_shifts(opcode);
-		return [to_hex(pattern.prefix), to_hex(opcode)];
+		return [pattern[0], opcode];
 	}
 
 	throw Error("Failed to match any pattern.");
@@ -418,13 +326,13 @@ function bit_set_res(mnemonic, tokens) {
 	var opcode = null;
 	var pattern = null;
 	if ((pattern = find_pattern(tokens, PATTERNS.bit_set_res_group_1, match_group_1)) !== null) {
-		opcode = pattern.base;
+		opcode = pattern[1];
 		if (mnemonic === "bit") opcode |= 64;
 		else if (mnemonic == "res") opcode |= 128;
 		else opcode |= 192;
 
 		opcode = apply_opcode_shifts(opcode);
-		return [to_hex(pattern.prefix), to_hex(opcode)]; 
+		return [pattern[0], opcode]; 
 	}
 
 	throw Error("Failed to match any pattern.");
@@ -434,18 +342,18 @@ function djnz_jp_jr(mnemonic, tokens) {
 	var opcode = null;
 	var pattern = null;
 	if (mnemonic === "djnz" && (pattern = find_pattern(tokens, PATTERNS.djnz_jp_jr_group_1, match_group_3)) !== null) {
-		opcode = pattern.base;
+		opcode = pattern[1];
 	}
 	else if (mnemonic === "jp" && (pattern = find_pattern(tokens, PATTERNS.djnz_jp_jr_group_2, match_group_3)) !== null) {
-		opcode = pattern.base;
+		opcode = pattern[1];
 	}
 	else if (mnemonic === "jr" && (pattern = find_pattern(tokens, PATTERNS.djnz_jp_jr_group_3, match_group_3)) !== null) {
-		opcode = pattern.base;
+		opcode = pattern[1];
 	}
 
 	if (opcode !== null) {
 		opcode = apply_opcode_shifts(opcode);
-		return [to_hex(pattern.prefix), to_hex(opcode)];
+		return [pattern[0], opcode];
 	}
 
 	throw Error("Failed to match any pattern.");
@@ -455,8 +363,8 @@ function ex(mnemonic, tokens) {
 	var opcode = null;
 	var pattern = null;
 	if ((pattern = find_pattern(tokens, PATTERNS.ex_group_1, match_group_0)) !== null) {
-		opcode = pattern.base;
-		return [to_hex(pattern.prefix), to_hex(opcode)];
+		opcode = pattern[1];
+		return [pattern[0], opcode];
 	}
 
 	throw Error("Failed to match any pattern.");
@@ -466,17 +374,17 @@ function inc_dec(mnemonic, tokens) {
 	var opcode = null;
 	var pattern = null;
 	if ((pattern = find_pattern(tokens, PATTERNS.inc_dec_group_1, match_group_1)) !== null) {
-		opcode = pattern.base;
+		opcode = pattern[1];
 		if (mnemonic === "dec") opcode |= 1;
 	}
 	else if ((pattern = find_pattern(tokens, PATTERNS.inc_dec_group_2, match_group_2)) !== null) {
-		opcode = pattern.base;
+		opcode = pattern[1];
 		if (mnemonic === "dec") opcode |= 8;
 	}
 
 	if (opcode !== null) {
 		opcode = apply_opcode_shifts(opcode);
-		return [to_hex(pattern.prefix), to_hex(opcode)];
+		return [pattern[0], opcode];
 	}
 
 	throw Error("Failed to match any pattern.");
@@ -486,11 +394,11 @@ function push_pop(mnemonic, tokens) {
 	var opcode = null;
 	var pattern = null;
 	if ((pattern = find_pattern(tokens, PATTERNS.push_pop_group_1, match_group_2)) !== null) {
-		opcode = pattern.base;
+		opcode = pattern[1];
 		if (mnemonic === "pop") opcode |= 4;
 
 		opcode = apply_opcode_shifts(opcode);
-		return [to_hex(pattern.prefix), to_hex(opcode)];
+		return [pattern[0], opcode];
 	}
 
 	throw Error("Failed to match any pattern.");
@@ -500,7 +408,7 @@ function rlc_rl_rrc_rr_sla_sra_srl(mnemonic, tokens) {
 	var opcode = null;
 	var pattern = null;
 	if ((pattern = find_pattern(tokens, PATTERNS.rlc_rl_rrc_rr_sla_sra_srl_group_1, match_group_1)) !== null) {
-		opcode = pattern.base;
+		opcode = pattern[1];
 		if (mnemonic === "rrc") opcode |= 8;
 		else if (mnemonic === "rl") opcode |= 16;
 		else if (mnemonic === "rr") opcode |= 24;
@@ -509,7 +417,7 @@ function rlc_rl_rrc_rr_sla_sra_srl(mnemonic, tokens) {
 		else if (mnemonic === "srl") opcode |= 56;
 
 		opcode = apply_opcode_shifts(opcode);
-		return [to_hex(pattern.prefix), to_hex(opcode)];
+		return [pattern[0], opcode];
 	}
 
 	throw Error("Failed to match any pattern.");
@@ -526,21 +434,28 @@ function apply_opcode_shifts(opcode) {
 function lookup_opcode(mnemonic, tokens) {
 	if (tokens.length === 0) {
         	var mnem0 = MNEMONICS_0[mnemonic];
-        	if (mnem0) return [to_hex(mnem0.prefix), to_hex(mnem0.opcode)];
+        	if (mnem0) {
+			STATE.opcode = [mnem0.prefix, mnem0.opcode];
+			return;
+		}
 	}
 
 	var mnem1 = MNEMONICS_1[mnemonic];
-	if (mnem1) return mnem1(mnemonic, tokens);
+	if (mnem1) {
+		STATE.opcode = mnem1(mnemonic, tokens);
+		return;
+	}
 
 	throw Error("Failed to match any mnemonic.");
 }
 
 function to_hex(value) {
-	return value.toString(16);
+	return value;
 }
 
 function parse(str) {
 	STATE.mnemonic = null;
+	STATE.opcode = null;
 	STATE.operand = null;
 	STATE.tokens = [];
 
@@ -559,7 +474,7 @@ function parse(str) {
 		}
 		else {
 			current += str[i];
-		} 		
+		}
 	}
 
 	if (current !== '') {
@@ -573,7 +488,13 @@ function parse(str) {
 
 function assemble(str) {
 	parse(str);
-	return lookup_opcode(STATE.mnemonic, STATE.tokens);
+	lookup_opcode(STATE.mnemonic, STATE.tokens);
+
+	if (STATE.opcode !== null) {
+		var assembled = STATE.opcode[0] << 8;
+		assembled |= STATE.opcode[1];
+		return assembled.toString(16);
+	}
 }
 
 function get_state() {
