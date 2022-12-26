@@ -457,10 +457,6 @@ function lookup_opcode(mnemonic, tokens) {
 	throw Error("Failed to match any mnemonic.");
 }
 
-function to_hex(value) {
-	return value;
-}
-
 function parse(str) {
 	STATE.mnemonic = null;
 	STATE.opcode = null;
