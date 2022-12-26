@@ -165,11 +165,7 @@ var MATCH_TABLES = {
 	vv: ["nz", "z", "nc", "c"]
 };
 
-function match_group_0(token, sym) {
-	return token === sym;
-}
-
-function match_group_1(token, sym) {
+function match_group(token, sym) {
 	var i;
 	if (sym === "r" || sym === "r'") {
 		i = MATCH_TABLES.r.indexOf(token);
@@ -200,13 +196,7 @@ function match_group_1(token, sym) {
 		STATE.opcode_shifts.push(token << 3);
 		return true;
 	}
-
-	return token === sym;
-}
-
-function match_group_2(token, sym) {
-	var i;
-	if (sym === "pp") {
+	else if (sym === "pp") {
 		i = MATCH_TABLES.pp.indexOf(token);
 		if (i === -1) return false;
 		STATE.opcode_shifts.push(i << 4);
@@ -230,17 +220,7 @@ function match_group_2(token, sym) {
 		STATE.opcode_shifts.push(i << 4);
 		return true;
 	}
-       else if (sym === "nn") {
-                if (token < 0x00 || token > 0xFFFF) return false;
-                return true;
-        }
-
-	return token === sym;
-}
-
-function match_group_3(token, sym) {
-	var i;
-	if (sym === "cc") {
+	else if (sym === "cc") {
 		i = MATCH_TABLES.cc.indexOf(token);
 		if (i === -1) return false;
 		STATE.opcode_shifts.push(i << 3);
@@ -252,30 +232,19 @@ function match_group_3(token, sym) {
 		STATE.opcode_shifts.push(i << 3);
 		return true;
 	}
-	else if (sym === "nn" && token === sym) {
-		if (STATE.operand < 0x00 || STATE.operand > 0xFFFF) return false;
-		STATE.operand_length = 2;
-		return true;
-	}
-        else if (sym === "n" && token === "nn") {
-                if (STATE.operand < 0x00 || STATE.operand > 0xFF) return false;
-		STATE.operand_length = 1;
-                return true;
-        }
 
 	return token === sym;
 }
 
-function find_pattern(tokens, patterns, match_fn) {
+function find_pattern(tokens, patterns) {
 	for (const p of patterns)
 	{
 		if (tokens.length !== p[2].length) continue;
-		STATE.operand_length = null;
 		STATE.opcode_shifts = [];
 
 		var matched = false;
 		for (var i = 0; i < tokens.length; i++) {
-			matched = match_fn(tokens[i], p[2][i]);
+			matched = match_group(tokens[i], p[2][i]);
 			if (!matched) break;
 		}
 
@@ -288,16 +257,16 @@ function find_pattern(tokens, patterns, match_fn) {
 function add_adc_sub_sbc(mnemonic, tokens) {
 	var opcode = null;
 	var pattern = null;
-	if ((pattern = find_pattern(tokens, PATTERNS.add_adc_sub_sbc_group_1, match_group_1)) !== null) {
+	if ((pattern = find_pattern(tokens, PATTERNS.add_adc_sub_sbc_group_1)) !== null) {
 		opcode = pattern[1];
 		if (mnemonic === "adc") opcode |= 8;
 		else if (mnemonic === "sub") opcode |= 16;
 		else if (mnemonic === "sbc") opcode |= 24;
 	}
-	else if (mnemonic === "add" && (pattern = find_pattern(tokens, PATTERNS.add_adc_sub_sbc_group_3, match_group_2)) !== null) {
+	else if (mnemonic === "add" && (pattern = find_pattern(tokens, PATTERNS.add_adc_sub_sbc_group_3)) !== null) {
 		opcode = pattern[1];
 	}
-	else if (mnemonic !== "sub" && (pattern = find_pattern(tokens, PATTERNS.add_adc_sub_sbc_group_2, match_group_2)) !== null) {
+	else if (mnemonic !== "sub" && (pattern = find_pattern(tokens, PATTERNS.add_adc_sub_sbc_group_2)) !== null) {
 		opcode = pattern[1];
 	}
 
@@ -312,7 +281,7 @@ function add_adc_sub_sbc(mnemonic, tokens) {
 function and_cp_or_xor(mnemonic, tokens) {
 	var opcode = null;
 	var pattern = null;
-	if ((pattern = find_pattern(tokens, PATTERNS.and_cp_or_xor_group_1, match_group_1)) !== null) {
+	if ((pattern = find_pattern(tokens, PATTERNS.and_cp_or_xor_group_1)) !== null) {
 		opcode = pattern[1];
 		if (mnemonic === "xor") opcode |= 8;
 		else if (mnemonic === "or") opcode |= 16;
@@ -328,7 +297,7 @@ function and_cp_or_xor(mnemonic, tokens) {
 function bit_set_res(mnemonic, tokens) {
 	var opcode = null;
 	var pattern = null;
-	if ((pattern = find_pattern(tokens, PATTERNS.bit_set_res_group_1, match_group_1)) !== null) {
+	if ((pattern = find_pattern(tokens, PATTERNS.bit_set_res_group_1)) !== null) {
 		opcode = pattern[1];
 		if (mnemonic === "bit") opcode |= 64;
 		else if (mnemonic == "res") opcode |= 128;
@@ -344,13 +313,13 @@ function bit_set_res(mnemonic, tokens) {
 function djnz_jp_jr(mnemonic, tokens) {
 	var opcode = null;
 	var pattern = null;
-	if (mnemonic === "djnz" && (pattern = find_pattern(tokens, PATTERNS.djnz_jp_jr_group_1, match_group_3)) !== null) {
+	if (mnemonic === "djnz" && (pattern = find_pattern(tokens, PATTERNS.djnz_jp_jr_group_1)) !== null) {
 		opcode = pattern[1];
 	}
-	else if (mnemonic === "jp" && (pattern = find_pattern(tokens, PATTERNS.djnz_jp_jr_group_2, match_group_3)) !== null) {
+	else if (mnemonic === "jp" && (pattern = find_pattern(tokens, PATTERNS.djnz_jp_jr_group_2)) !== null) {
 		opcode = pattern[1];
 	}
-	else if (mnemonic === "jr" && (pattern = find_pattern(tokens, PATTERNS.djnz_jp_jr_group_3, match_group_3)) !== null) {
+	else if (mnemonic === "jr" && (pattern = find_pattern(tokens, PATTERNS.djnz_jp_jr_group_3)) !== null) {
 		opcode = pattern[1];
 	}
 
@@ -364,7 +333,7 @@ function djnz_jp_jr(mnemonic, tokens) {
 
 function ex(mnemonic, tokens) {
 	var pattern = null;
-	if ((pattern = find_pattern(tokens, PATTERNS.ex_group_1, match_group_0)) !== null) {
+	if ((pattern = find_pattern(tokens, PATTERNS.ex_group_1)) !== null) {
 		return [pattern[0], pattern[1]];
 	}
 
@@ -373,7 +342,7 @@ function ex(mnemonic, tokens) {
 
 function im() {
 	var pattern = null;
-	if ((pattern = find_pattern(STATE.tokens, PATTERNS.im_group_1, match_group_0)) !== null) {
+	if ((pattern = find_pattern(STATE.tokens, PATTERNS.im_group_1)) !== null) {
 		return [pattern[0], pattern[1]];
 	}
 
@@ -383,11 +352,11 @@ function im() {
 function inc_dec(mnemonic, tokens) {
 	var opcode = null;
 	var pattern = null;
-	if ((pattern = find_pattern(tokens, PATTERNS.inc_dec_group_1, match_group_1)) !== null) {
+	if ((pattern = find_pattern(tokens, PATTERNS.inc_dec_group_1)) !== null) {
 		opcode = pattern[1];
 		if (mnemonic === "dec") opcode |= 1;
 	}
-	else if ((pattern = find_pattern(tokens, PATTERNS.inc_dec_group_2, match_group_2)) !== null) {
+	else if ((pattern = find_pattern(tokens, PATTERNS.inc_dec_group_2)) !== null) {
 		opcode = pattern[1];
 		if (mnemonic === "dec") opcode |= 8;
 	}
@@ -403,7 +372,7 @@ function inc_dec(mnemonic, tokens) {
 function push_pop(mnemonic, tokens) {
 	var opcode = null;
 	var pattern = null;
-	if ((pattern = find_pattern(tokens, PATTERNS.push_pop_group_1, match_group_2)) !== null) {
+	if ((pattern = find_pattern(tokens, PATTERNS.push_pop_group_1)) !== null) {
 		opcode = pattern[1];
 		if (mnemonic === "pop") opcode |= 4;
 
@@ -417,7 +386,7 @@ function push_pop(mnemonic, tokens) {
 function rlc_rl_rrc_rr_sla_sra_srl(mnemonic, tokens) {
 	var opcode = null;
 	var pattern = null;
-	if ((pattern = find_pattern(tokens, PATTERNS.rlc_rl_rrc_rr_sla_sra_srl_group_1, match_group_1)) !== null) {
+	if ((pattern = find_pattern(tokens, PATTERNS.rlc_rl_rrc_rr_sla_sra_srl_group_1)) !== null) {
 		opcode = pattern[1];
 		if (mnemonic === "rrc") opcode |= 8;
 		else if (mnemonic === "rl") opcode |= 16;
@@ -466,7 +435,6 @@ function parse(str) {
 	STATE.tokens = [];
 
 	var current = ''
-
 	for (var i = 0; i < str.length; i++) {
 		var sep = str[i] === ' ' || str[i] === ',' || str[i] === '\n' || str[i] === '(' || str[i] === ')' || str[i] === '+';
 		if (sep) {
@@ -543,4 +511,3 @@ function push_token(token) {
 
 exports.assemble = assemble;
 exports.get_state = get_state;
-exports.parse = parse;
