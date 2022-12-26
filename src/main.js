@@ -493,6 +493,12 @@ function assemble(str) {
 	if (STATE.opcode !== null) {
 		var assembled = STATE.opcode[0] << 8;
 		assembled |= STATE.opcode[1];
+
+		if (STATE.operand !== null) {
+			assembled <<= STATE.operand_length * 8;
+			assembled |= STATE.operand;
+		}
+
 		return assembled.toString(16);
 	}
 }
