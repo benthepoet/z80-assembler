@@ -506,8 +506,13 @@ function assemble(str) {
 		}
 
 		if (STATE.operand !== null) {
-			assembled <<= STATE.operand_length * 8;
-			assembled |= STATE.operand;
+			var op = STATE.operand;
+			for (var i = 0; i < STATE.operand_length; i++) {
+				var a = op & 0xFF;
+				assembled <<= 8;
+				assembled |= a;
+				op >>= 8;
+			}
 		}
 
 		return assembled.toString(16);
