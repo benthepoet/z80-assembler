@@ -182,15 +182,15 @@ function match_group_1(token, sym) {
 		return true;
 	}
 	else if (sym === "dp") {
-		if (token < 0x00 || token > 0xFF) return false;
+		if (STATE.displacement < 0x00 || STATE.displacement > 0xFF) return false;
 		return true;
 	}
-	else if (sym === "n") {
+	else if (sym === "n" && token === "nn") {
 		if (STATE.operand < 0x00 || STATE.operand > 0xFF) return false;
 		STATE.operand_length = 1;
 		return true;
 	}
-	else if (sym === "nn") {
+	else if (sym === "nn" && token === sym) {
                 if (STATE.operand < 0x00 || STATE.operand > 0xFFFF) return false;
 		STATE.operand_length = 2;
                 return true;
@@ -252,12 +252,14 @@ function match_group_3(token, sym) {
 		STATE.opcode_shifts.push(i << 3);
 		return true;
 	}
-	else if (sym === "nn") {
-		if (token < 0x00 || token > 0xFFFF) return false;
+	else if (sym === "nn" && token === sym) {
+		if (STATE.operand < 0x00 || STATE.operand > 0xFFFF) return false;
+		STATE.operand_length = 2;
 		return true;
 	}
-        else if (sym === "n") {
-                if (token < 0x00 || token > 0xFF) return false;
+        else if (sym === "n" && token === "nn") {
+                if (STATE.operand < 0x00 || STATE.operand > 0xFF) return false;
+		STATE.operand_length = 1;
                 return true;
         }
 
