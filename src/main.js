@@ -59,6 +59,7 @@ var MNEMONICS_1 = {
 	inc: inc_dec,
 	jp: djnz_jp_jr,
 	jr: djnz_jp_jr,
+	ld: ld,
 	or: and_cp_or_xor,
 	push: push_pop,
 	pop: push_pop,
@@ -78,7 +79,7 @@ var MNEMONICS_1 = {
 
 var PATTERNS = {
 	add_adc_sub_sbc_group_1: [
-		[0x00, 0x80, ["a", "r'"]],
+		[0x00, 0x80, ["a", "r2"]],
 		[0x00, 0xC0, ["a", "n"]],
 		[0x00, 0x86, ["a", "(", "hl", ")"]],
 		[0xDD, 0x86, ["a", "(", "ix", "+", "dp", ")"]],
@@ -93,14 +94,14 @@ var PATTERNS = {
 		[0xFD, 0x09, ["iy", "rr"]]
 	],
 	and_cp_or_xor_group_1: [
-		[0x00, 0xA0, ["a", "r'"]],
+		[0x00, 0xA0, ["a", "r2"]],
 		[0x00, 0xE6, ["a", "n"]],
 		[0x00, 0xA6, ["a", "(", "hl", ")"]],
 		[0xDD, 0xA6, ["a", "(", "ix", "+", "dp", ")"]],
 		[0xFD, 0xA6, ["a", "(", "iy", "+", "dp", ")"]]
 	],
 	bit_set_res_group_1: [
-		[0xCB, 0x00, ["bt", "r'"]],
+		[0xCB, 0x00, ["bt", "r2"]],
 		[0xCB, 0x06, ["bt", "(", "hl", ")"]],
 		[0xDDCB, 0x06, ["bt", "(", "ix", "+", "dp", ")"]],
 		[0xFDCB, 0x06, ["bt", "(", "iy", "+", "dp", ")"]]
@@ -132,7 +133,7 @@ var PATTERNS = {
 		[0xED, 0x5E, ["3"]]
 	],
 	inc_dec_group_1: [
-		[0x00, 0x04, ["r"]],
+		[0x00, 0x04, ["r1"]],
 		[0x00, 0x34, ["(", "hl", ")"]],
 		[0xDD, 0x34, ["(", "ix", "+", "dp", ")"]],
 		[0xFD, 0x34, ["(", "iy", "+", "dp", ")"]]
@@ -142,13 +143,20 @@ var PATTERNS = {
 		[0xDD, 0x23, ["ix"]],
 		[0xFD, 0x23, ["iy"]]
 	],
+	ld_group_1: [
+		[0x00, 0x40, ["r1", "r2"]],
+		[0x00, 0x06, ["r1", "n"]],
+		[0x00, 0x46, ["r1", "hl"]],
+		[0xDD, 0x46, ["r1", "(", "ix", "+", "dp", ")"]],
+		[0xFD, 0x46, ["r1", "(", "iy", "+", "dp", ")"]]
+	],
 	push_pop_group_1: [
 		[0x00, 0xC1, ["qq"]],
 		[0xDD, 0xE1, ["ix"]],
 		[0xFD, 0xE1, ["iy"]]
 	],
 	rlc_rl_rrc_rr_sla_sra_srl_group_1: [
-		[0xCB, 0x00, ["r'"]],
+		[0xCB, 0x00, ["r2"]],
 		[0xCB, 0x06, ["(", "hl", ")"]],
 		[0xDDCB, 0x06, ["(", "ix", "+", "dp", ")"]],
 		[0xFDCB, 0x06, ["(", "iy", "+", "dp", ")"]]
@@ -167,13 +175,13 @@ var MATCH_TABLES = {
 
 function match_group(token, sym) {
 	var i;
-	if (sym === "r" || sym === "r'") {
+	if (sym === "r1" || sym === "r2") {
 		i = MATCH_TABLES.r.indexOf(token);
 		if (i === -1) return false;
 		else if (i === 6) i++;
 
-		if (sym === "r") STATE.opcode_shifts.push(i << 3);
-		else if (sym === "r'") STATE.opcode_shifts.push(i);
+		if (sym === "r1") STATE.opcode_shifts.push(i << 3);
+		else if (sym === "r2") STATE.opcode_shifts.push(i);
 
 		return true;
 	}
@@ -304,7 +312,7 @@ function bit_set_res(mnemonic, tokens) {
 		else opcode |= 192;
 
 		opcode = apply_opcode_shifts(opcode);
-		return [pattern[0], opcode]; 
+		return [pattern[0], opcode];
 	}
 
 	throw Error("Failed to match any pattern.");
@@ -369,6 +377,13 @@ function inc_dec(mnemonic, tokens) {
 	throw Error("Failed to match any pattern.");
 }
 
+function ld(mnemonic, tokens) {
+	var opcode = null;
+	var pattern = null;
+
+	throw Error("Failed to match any pattern.");
+}
+
 function push_pop(mnemonic, tokens) {
 	var opcode = null;
 	var pattern = null;
@@ -410,7 +425,7 @@ function apply_opcode_shifts(opcode) {
 	return opcode;
 }
 
-function lookup_opcode(mnemonic, tokens) {
+function find_opcode(mnemonic, tokens) {
 	if (tokens.length === 0) {
         	var mnem0 = MNEMONICS_0[mnemonic];
         	if (mnem0) {
@@ -428,7 +443,7 @@ function lookup_opcode(mnemonic, tokens) {
 	throw Error("Failed to match any mnemonic.");
 }
 
-function parse(str) {
+function parse_line(str) {
 	STATE.mnemonic = null;
 	STATE.opcode = null;
 	STATE.operand = null;
@@ -460,9 +475,9 @@ function parse(str) {
 	return STATE;
 }
 
-function assemble(str) {
-	parse(str);
-	lookup_opcode(STATE.mnemonic, STATE.tokens);
+function assemble(line) {
+	parse_line(line);
+	find_opcode(STATE.mnemonic, STATE.tokens);
 
 	if (STATE.opcode !== null) {
 		var assembled = STATE.opcode[0] << 8;
