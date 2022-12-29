@@ -8,7 +8,8 @@ var STATE = {
 	tokens: [],
 	current_word: null,
 	line_buffer: null,
-	line_cursor: null
+	line_cursor: null,
+	symbols: {}
 };
 
 var MNEMONICS_0 = {
@@ -368,6 +369,7 @@ function djnz_jp_jr(mnemonic, tokens) {
 	}
 	else if (mnemonic === "jr" && (pattern = find_pattern(tokens, PATTERNS.djnz_jp_jr_group_3)) !== null) {
 		opcode = pattern[1];
+		STATE.operand -= 0x02;
 	}
 
 	if (opcode !== null) {
