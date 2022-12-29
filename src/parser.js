@@ -1,6 +1,6 @@
 
 var	current_word = null;
-var	line_cursor = 0;
+var	line_cursor = null;
 var	line_buffer = null;
 
 function read_word() {
@@ -18,6 +18,7 @@ function read_word() {
 
 function load_line_buffer(line) {
 	line_buffer = '';
+	line_cursor = 0;
 
 	for (var i = 0; i < line.length; i++) {
 		var c = line[i];
@@ -32,10 +33,19 @@ function load_line_buffer(line) {
 load_line_buffer("ld a,(ix+$45)");
 console.log(line_buffer);
 
-read_word();
-while (current_word !== '') {
-	console.log(current_word);
+print_words();
+
+load_line_buffer("adc a,l");
+console.log(line_buffer);
+
+print_words();
+
+function print_words() {
 	read_word();
+	while (current_word !== '') {
+		console.log(current_word);
+		read_word();
+	}
 }
 
 /*

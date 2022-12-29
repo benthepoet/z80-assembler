@@ -5,7 +5,10 @@ var STATE = {
 	operand_length: null,
 	displacement: null,
 	opcode_shifts: [],
-	tokens: []
+	tokens: [],
+	current_word: null,
+	line_buffer: null,
+	line_cursor: null
 };
 
 var MNEMONICS_0 = {
@@ -443,36 +446,51 @@ function find_opcode(mnemonic, tokens) {
 	throw Error("Failed to match any mnemonic.");
 }
 
+function read_word() {
+        STATE.current_word = '';
+
+        while (STATE.line_buffer[STATE.line_cursor] === ' ' && STATE.line_cursor < STATE.line_buffer.length) {
+                STATE.line_cursor++;
+        }
+
+        while (STATE.line_buffer[STATE.line_cursor] !== ' ' && STATE.line_cursor < STATE.line_buffer.length) {
+                STATE.current_word += STATE.line_buffer[STATE.line_cursor];
+                STATE.line_cursor++;
+        }
+}
+
+function load_line_buffer(line) {
+        STATE.line_buffer = '';
+        STATE.line_cursor = 0;
+
+        for (var i = 0; i < line.length; i++) {
+                var c = line[i];
+                if (c === ',') c = ' ';
+                else if (c === '(') c = '( '
+                else if (c === ')') c = ' )'
+                else if (c === '+') c = ' + '
+                STATE.line_buffer += c;
+        }
+}
+
 function parse_line(str) {
 	STATE.mnemonic = null;
 	STATE.opcode = null;
 	STATE.operand = null;
 	STATE.tokens = [];
 
-	var current = ''
-	for (var i = 0; i < str.length; i++) {
-		var sep = str[i] === ' ' || str[i] === ',' || str[i] === '\n' || str[i] === '(' || str[i] === ')' || str[i] === '+';
-		if (sep) {
-			if (current !== '') {
-				push_token(current);
-				current = '';
-			}
-			if (str[i] === '(' || str[i] === ')' || str[i] === '+') {
-				push_token(str[i]);
-			}
-		}
-		else {
-			current += str[i];
+	load_line_buffer(str);
+
+	read_word();
+	if (STATE.current_word !== '') {
+		STATE.mnemonic = STATE.current_word;
+
+		read_word();
+		while (STATE.current_word !== '') {
+			push_token(STATE.current_word);
+			read_word();
 		}
 	}
-
-	if (current !== '') {
-		push_token(current);
-	}
-
-	STATE.mnemonic = STATE.tokens.shift();
-
-	return STATE;
 }
 
 function assemble(line) {
