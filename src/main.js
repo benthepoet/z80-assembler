@@ -94,7 +94,7 @@ var PATTERNS = {
 	add_adc_sub_sbc_group_3: [
 		[0x00, 0x09, ["hl", "ss"]],
 		[0xDD, 0x09, ["ix", "pp"]],
-		[0xFD, 0x09, ["iy", "rr"]]
+		[0xFD, 0x09, ["iy", "qq"]]
 	],
 	and_cp_or_xor_group_1: [
 		[0x00, 0xA0, ["a", "r2"]],
@@ -163,8 +163,8 @@ var PATTERNS = {
 		[0x00, 0x02, ["(", "bc", ")", "a"]],
 		[0x00, 0x12, ["(", "de", ")", "a"]],
 		[0x00, 0x32, ["(", "nn", ")", "a"]],
-		[0x00, 0x22, ["(", "nn", ")" "hl"]],
-		[0xED, 0x43, ["(", "nn", ")", "rr"]],
+		[0x00, 0x22, ["(", "nn", ")", "hl"]],
+		[0xED, 0x43, ["(", "nn", ")", "ss"]],
 		[0xDD, 0x22, ["(", "nn", ")", "ix"]],
 		[0xFD, 0x22, ["(", "nn", ")", "iy"]]
 	],
@@ -178,11 +178,11 @@ var PATTERNS = {
 	ld_group_4: [
 		[0xED, 0x47, ["i", "a"]],
 		[0xED, 0x4F, ["r", "a"]],
-		[0x00, 0x01, ["dd", "nn"]],
+		[0x00, 0x01, ["ss", "nn"]],
 		[0xDD, 0x21, ["ix", "nn"]],
 		[0xFD, 0x21, ["iy", "nn"]],
 		[0x00, 0x2A, ["hl", "(", "nn", ")"]],
-		[0xED, 0x4B, ["dd", "(", "nn", ")"]],
+		[0xED, 0x4B, ["ss", "(", "nn", ")"]],
 		[0xDD, 0x2A, ["ix", "(", "nn", ")"]],
 		[0xFD, 0x2A, ["iy", "(", "nn", ")"]],
 		[0x00, 0xF9, ["sp", "hl"]],
@@ -190,7 +190,7 @@ var PATTERNS = {
 		[0xFD, 0xF9, ["sp", "iy"]]
 	],
 	push_pop_group_1: [
-		[0x00, 0xC1, ["qq"]],
+		[0x00, 0xC1, ["rr"]],
 		[0xDD, 0xE1, ["ix"]],
 		[0xFD, 0xE1, ["iy"]]
 	],
@@ -205,9 +205,9 @@ var PATTERNS = {
 var MATCH_TABLES = {
 	cc: ["nz", "z", "nc", "c", "po", "pe", "p", "m"],
 	pp: ["bc", "de", "ix", "sp"],
-	qq: ["bc", "de", "hl", "af"],
+	qq: ["bc", "de", "iy", "af"],
 	r: ["b", "c", "d", "e", "h", "l", "a"],
-	rr: ["bc", "de", "iy", "sp"],
+	rr: ["bc", "de", "hl", "af"],
 	ss: ["bc", "de", "hl", "sp"],
 	vv: ["nz", "z", "nc", "c"]
 };
@@ -419,6 +419,23 @@ function inc_dec(mnemonic, tokens) {
 function ld(mnemonic, tokens) {
 	var opcode = null;
 	var pattern = null;
+	if ((pattern = find_pattern(tokens, PATTERNS.ld_group_1)) !== null) {
+		opcode = pattern[1];
+	}
+	else if (tokens[0] === "(" && (pattern = find_pattern(tokens, PATTERNS.ld_group_2)) !== null) {
+		opcode = pattern[1];
+	}
+	else if (tokens[0] === "a" && (pattern = find_pattern(tokens, PATTERNS.ld_group_3)) !== null) {
+		opcode = pattern[1];
+	}
+	else if ((pattern = find_pattern(tokens, PATTERNS.ld_group_4)) !== null) {
+		opcode = pattern[1];
+	}
+
+	if (opcode !== null) {
+		opcode = apply_opcode_shifts(opcode);
+		return [pattern[0], opcode];
+	}
 
 	throw Error("Failed to match any pattern.");
 }
