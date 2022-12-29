@@ -607,4 +607,3 @@ function push_token(token) {
 
 exports.assemble = assemble;
 exports.get_state = get_state;
-exports.to_bytes = to_bytes;
