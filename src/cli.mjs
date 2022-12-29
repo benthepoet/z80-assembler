@@ -16,6 +16,10 @@ var { values } = parseArgs({
 	}
 });
 
+if (!values.src_filename) {
+	throw Error("Source file not specified.");
+}
+
 var location_counter = 0;
 
 try {
