@@ -476,10 +476,7 @@ function load_line_buffer(line) {
 function parse_line(str) {
 	STATE.mnemonic = null;
 	STATE.opcode = null;
-	STATE.operand = null;
 	STATE.tokens = [];
-
-	load_line_buffer(str);
 
 	read_word();
 	if (STATE.current_word !== '') {
@@ -494,7 +491,13 @@ function parse_line(str) {
 }
 
 function assemble(line) {
+	load_line_buffer(line);
 	parse_line(line);
+
+	if (STATE.MNEMONIC === null) {
+		return;
+	}
+
 	find_opcode(STATE.mnemonic, STATE.tokens);
 
 	if (STATE.opcode !== null) {
