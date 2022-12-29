@@ -17,7 +17,11 @@ async function run() {
 		});
 
 		rl.on('line', line => {
-			console.log(assembler.assemble(line), line);
+			var bytes = assembler.assemble(line);
+			if (bytes.length > 0) {
+				var s = bytes.map(n => n.toString(16).padStart(2, '0')).join(' ');
+				console.log(s.padEnd(12, ' '), line);
+			}
 		});
 
 		await events.once(rl, 'close');

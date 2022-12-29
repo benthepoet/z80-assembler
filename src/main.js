@@ -494,33 +494,40 @@ function assemble(line) {
 	load_line_buffer(line);
 	parse_line(line);
 
-	if (STATE.MNEMONIC === null) {
-		return;
+	if (STATE.mnemonic === null) {
+		return [];
 	}
 
 	find_opcode(STATE.mnemonic, STATE.tokens);
 
 	if (STATE.opcode !== null) {
-		var assembled = STATE.opcode[0] << 8;
-		assembled |= STATE.opcode[1];
+		var bytes = to_bytes(STATE.opcode[0]);
+		bytes.push(STATE.opcode[1]);
 
 		if (STATE.displacement !== null) {
-			assembled <<= 8;
-			assembled |= STATE.displacement;
+			bytes.push(STATE.displacement);
 		}
 
 		if (STATE.operand !== null) {
 			var op = STATE.operand;
 			for (var i = 0; i < STATE.operand_length; i++) {
 				var a = op & 0xFF;
-				assembled <<= 8;
-				assembled |= a;
+				bytes.push(a);
 				op >>= 8;
 			}
 		}
 
-		return assembled.toString(16);
+		return bytes;
 	}
+}
+
+function to_bytes(n) {
+	var b = [];
+	while (n !== 0) {
+		b.unshift(n & 0xFF);
+		n >>= 8;
+	}
+	return b;
 }
 
 function get_state() {
@@ -547,3 +554,4 @@ function push_token(token) {
 
 exports.assemble = assemble;
 exports.get_state = get_state;
+exports.to_bytes = to_bytes;
