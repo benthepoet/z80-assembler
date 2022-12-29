@@ -3,13 +3,6 @@ var	current_word = null;
 var	line_cursor = 0;
 var	line_buffer = null;
 
-function is_term() {
-	return line_buffer[line_cursor] === ' '
-		|| line_buffer[line_cursor] === '('
-		|| line_buffer[line_cursor] === ')'
-		|| line_buffer[line_cursor] === '+';
-}
-
 function read_word() {
 	current_word = '';
 
@@ -21,12 +14,11 @@ function read_word() {
 		current_word += line_buffer[line_cursor];
 		line_cursor++;
 	}
-
-	return current_word;
 }
 
 function load_line_buffer(line) {
 	line_buffer = '';
+
 	for (var i = 0; i < line.length; i++) {
 		var c = line[i];
 		if (c === ',') c = ' ';
@@ -40,10 +32,10 @@ function load_line_buffer(line) {
 load_line_buffer("ld a,(ix+$45)");
 console.log(line_buffer);
 
-var a = read_word();
-while (a !== '') {
-	console.log(a);
-	a = read_word();
+read_word();
+while (current_word !== '') {
+	console.log(current_word);
+	read_word();
 }
 
 /*
