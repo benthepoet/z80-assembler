@@ -20,8 +20,6 @@ if (!values.src_filename) {
 	throw Error("Source file not specified.");
 }
 
-var location_counter = 0;
-
 try {
 	var src_file = await open(values.src_filename, 'r');
 		
@@ -30,12 +28,12 @@ try {
 		bin_file = await open(values.bin_filename, 'w' );
 	} 		
 
+	var location_counter = 0;
 	for await (var line of src_file.readLines()) {
 		var bytes = assemble(line);
 		if (bytes.length > 0) {
 			if (bin_file !== null) {
-				var buf = Buffer.from(bytes);
-				await bin_file.write(buf);
+				await bin_file.write(Buffer.from(bytes));
 			}
 
 			var byteString = bytes.map(n => n.toString(16).padStart(2, '0')).join(' ');
