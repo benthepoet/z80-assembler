@@ -369,7 +369,6 @@ function djnz_jp_jr(mnemonic, tokens) {
 	}
 	else if (mnemonic === "jr" && (pattern = find_pattern(tokens, PATTERNS.djnz_jp_jr_group_3)) !== null) {
 		opcode = pattern[1];
-		STATE.operand -= 0x02;
 	}
 
 	if (opcode !== null) {
@@ -546,14 +545,14 @@ function parse_line(str) {
 			read_word();
 		}
 
-		if (find_pattern(STATE.tokens, [[0x00, 0x00, ["=", "nn"]]]))
+		if (word.endsWith('=') && word.length > 3)
 		{
-			if (word.length < 3)
-			{
-				throw Error("Symbols must be at least 3 characters.");
+			if (STATE.operand !== null) {
+				STATE.symbols[word.substring(0, word.length -1)] = STATE.operand;
 			}
-
-			STATE.symbols[word] = STATE.operand;
+			else {
+				throw Error("Value was not provided for symbol.");
+			}
 		}
 		else {
 			STATE.mnemonic = word;
