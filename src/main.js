@@ -110,6 +110,9 @@ var PATTERNS = {
 		[0xDDCB, 0x06, ["bt", "(", "ix", "+", "dp", ")"]],
 		[0xFDCB, 0x06, ["bt", "(", "iy", "+", "dp", ")"]]
 	],
+	constant_group_1: [
+		[0x00, 0x00, ["=", "nn"]]
+	],
 	djnz_jp_jr_group_1: [
 		[0x00, 0x10, ["n"]]
 	],
@@ -369,7 +372,6 @@ function djnz_jp_jr(mnemonic, tokens) {
 	}
 	else if (mnemonic === "jr" && (pattern = find_pattern(tokens, PATTERNS.djnz_jp_jr_group_3)) !== null) {
 		opcode = pattern[1];
-		STATE.operand -= 0x02;
 	}
 
 	if (opcode !== null) {
@@ -546,7 +548,7 @@ function parse_line(str) {
 			read_word();
 		}
 
-		if (find_pattern(STATE.tokens, [[0x00, 0x00, ["=", "nn"]]]))
+		if (find_pattern(STATE.tokens, PATTERNS.constant_group_1))
 		{
 			if (word.length < 3)
 			{
