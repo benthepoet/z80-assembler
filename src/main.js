@@ -235,10 +235,10 @@ function match_group(token, sym) {
 		return true;
 	}
 	else if (sym === "nn" && token === sym) {
-                if (STATE.operand < 0x00 || STATE.operand > 0xFFFF) return false;
+		if (STATE.operand < 0x00 || STATE.operand > 0xFFFF) return false;
 		STATE.operand_length = 2;
-                return true;
-        }
+		return true;
+	}
 	else if (sym === "bt") {
 		if (token < 0 || token > 7) return false;
 		STATE.opcode_shifts.push(token << 3);
@@ -531,16 +531,32 @@ function load_line_buffer(line) {
 function parse_line(str) {
 	STATE.mnemonic = null;
 	STATE.opcode = null;
+	STATE.operand = null;
+	STATE.operand_length = null;
+	STATE.displacement = null;
 	STATE.tokens = [];
 
 	read_word();
 	if (STATE.current_word !== '') {
-		STATE.mnemonic = STATE.current_word;
+		var word = STATE.current_word;
 
 		read_word();
 		while (STATE.current_word !== '') {
 			push_token(STATE.current_word);
 			read_word();
+		}
+
+		if (find_pattern(STATE.tokens, [[0x00, 0x00, ["=", "nn"]]]))
+		{
+			if (word.length < 3)
+			{
+				throw Error("Symbols must be at least 3 characters.");
+			}
+
+			STATE.symbols[word] = STATE.operand;
+		}
+		else {
+			STATE.mnemonic = word;
 		}
 	}
 }
@@ -590,7 +606,7 @@ function get_state() {
 }
 
 function push_token(token) {
-	if (token[0] === '$') {
+	if (token.startsWith('$')) {
 		var value = parseInt(token.substring(1), 16);
 		var tlen = STATE.tokens.length;
 		if (tlen > 0 && STATE.tokens[tlen - 1] === "+") {
@@ -603,7 +619,19 @@ function push_token(token) {
 		}
 	}
 	else {
-		STATE.tokens.push(token);
+		if (token.length > 2 && token !== "af'") {
+			if (STATE.symbols.hasOwnProperty(token)) {
+				var value = STATE.symbols[token];
+				STATE.operand = value;
+				STATE.tokens.push('nn');
+			}
+			else {
+				throw Error(`Symbol '${token}' not defined.`);
+			}
+		}
+		else {
+			STATE.tokens.push(token);
+		}
 	}
 }
 
