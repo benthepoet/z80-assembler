@@ -675,29 +675,20 @@ function push_token(mnemonic, token) {
 }
 
 function createToInt(size) {
-    if (size < 2) {
-        throw new Error('Minimum size is 2');
-    }
-    else if (size > 64) {
-        throw new Error('Maximum size is 64');
-    }
+	const maxValue = (1 << (size - 1)) - 1;
+	const minValue = -maxValue - 1;
 
-    // Determine value range
-    const maxValue = (1 << (size - 1)) - 1;
-    const minValue = -maxValue - 1;
+	return (value) => {
+		if (value > maxValue || value < minValue) {
+			throw new Error(`Int${size} overflow`);
+		}
 
-    return (value) => {
-        if (value > maxValue || value < minValue) {
-            throw new Error(`Int${size} overflow`);
-        }
+		if (value < 0) {
+			return (1 << size) + value;
+		}
 
-        if (value < 0) {
-            return (1 << size) + value;
-        }
-        else {
-            return value;
-        }
-    };
+		return value;
+	};
 }
 
 exports.assemble = assemble;
