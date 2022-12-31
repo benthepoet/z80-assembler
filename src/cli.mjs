@@ -54,17 +54,18 @@ async function process(output) {
 		var location_counter = init_location();
 		for await (var line of src_file.readLines()) {
 			var bytes = assemble(line);
+
+			if (output && values.verbose) {
+				var byteString = bytes.map(n => n.toString(16).padStart(2, '0')).join(' ');
+				console.log(location_counter.toString(16).padStart(4, '0'), byteString.padEnd(12, ' '), line);
+			}
+
 			if (bytes.length > 0) {
 				if (output && bin_file !== null) {
 					await bin_file.write(Buffer.from(bytes));
 				}
 
 				location_counter = inc_location(bytes.length);
-			}
-
-			if (output && values.verbose) {
-				var byteString = bytes.map(n => n.toString(16).padStart(2, '0')).join(' ');
-				console.log(location_counter.toString(16).padStart(4, '0'), byteString.padEnd(12, ' '), line);
 			}
 		}
 

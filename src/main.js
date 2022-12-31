@@ -524,7 +524,7 @@ function load_line_buffer(line) {
 
         for (var i = 0; i < line.length; i++) {
                 var c = line[i];
-                if (c === ',') c = ' ';
+                if (c === ',' || c === '\t') c = ' ';
                 else if (c === '(') c = '( '
                 else if (c === ')') c = ' )'
                 else if (c === '+') c = ' + '
