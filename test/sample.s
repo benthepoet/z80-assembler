@@ -10,4 +10,4 @@ jp po,$2f01
 ld a,$FF
 loop:
 dec a
-jp nz,loop
+jr nz,loop

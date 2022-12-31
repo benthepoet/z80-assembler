@@ -554,7 +554,7 @@ function parse_line(str) {
 
 		read_word();
 		while (STATE.current_word !== '') {
-			push_token(STATE.current_word);
+			push_token(word, STATE.current_word);
 			read_word();
 		}
 
@@ -627,7 +627,7 @@ function get_state() {
 	return STATE;
 }
 
-function push_token(token) {
+function push_token(mnemonic, token) {
 	if (token.startsWith('$')) {
 		var value = parseInt(token.substring(1), 16);
 		var tlen = STATE.tokens.length;
@@ -644,8 +644,15 @@ function push_token(token) {
 		if (token.length > 2 && token !== "af'") {
 			if (STATE.symbols.hasOwnProperty(token)) {
 				var value = STATE.symbols[token];
+				var location_counter = STATE.location_counter + 2;
+
+				if (mnemonic === "djnz" || mnemonic === "jr") {
+					value = value > location_counter ? location_counter - value : value - location_counter;
+					value = createToInt(8)(value);
+				}
+
 				STATE.operand = value;
-				STATE.tokens.push('sym');
+				STATE.tokens.push('nn');
 			}
 			else {
 				throw Error(`Symbol '${token}' not defined.`);
@@ -655,6 +662,32 @@ function push_token(token) {
 			STATE.tokens.push(token);
 		}
 	}
+}
+
+function createToInt(size) {
+    if (size < 2) {
+        throw new Error('Minimum size is 2');
+    }
+    else if (size > 64) {
+        throw new Error('Maximum size is 64');
+    }
+
+    // Determine value range
+    const maxValue = (1 << (size - 1)) - 1;
+    const minValue = -maxValue - 1;
+
+    return (value) => {
+        if (value > maxValue || value < minValue) {
+            throw new Error(`Int${size} overflow`);
+        }
+
+        if (value < 0) {
+            return (1 << size) + value;
+        }
+        else {
+            return value;
+        }
+    };
 }
 
 exports.assemble = assemble;
