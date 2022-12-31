@@ -9,7 +9,8 @@ var STATE = {
 	current_word: null,
 	line_buffer: null,
 	line_cursor: null,
-	symbols: {}
+	symbols: {},
+	location_counter: null
 };
 
 var MNEMONICS_0 = {
@@ -542,6 +543,15 @@ function parse_line(str) {
 	if (STATE.current_word !== '') {
 		var word = STATE.current_word;
 
+		if (word.endsWith(':')) {
+			STATE.symbols[word.substring(0, word.length - 1)] = STATE.location_counter;
+			read_word();
+			if (STATE.current_word === '') {
+				return;
+			}
+			word = STATE.current_word;
+		}
+
 		read_word();
 		while (STATE.current_word !== '') {
 			push_token(STATE.current_word);
@@ -603,6 +613,16 @@ function to_bytes(n) {
 	return b;
 }
 
+function inc_location(n) {
+	STATE.location_counter += n;
+	return STATE.location_counter;
+}
+
+function init_location() {
+	STATE.location_counter = 0;
+	return STATE.location_counter;
+}
+
 function get_state() {
 	return STATE;
 }
@@ -625,7 +645,7 @@ function push_token(token) {
 			if (STATE.symbols.hasOwnProperty(token)) {
 				var value = STATE.symbols[token];
 				STATE.operand = value;
-				STATE.tokens.push('nn');
+				STATE.tokens.push('sym');
 			}
 			else {
 				throw Error(`Symbol '${token}' not defined.`);
@@ -639,3 +659,5 @@ function push_token(token) {
 
 exports.assemble = assemble;
 exports.get_state = get_state;
+exports.inc_location = inc_location;
+exports.init_location = init_location;

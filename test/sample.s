@@ -7,4 +7,7 @@ ld hl,dw2
 add a,reg1
 inc hl
 jp po,$2f01
-
+ld a,$FF
+loop:
+dec a
+jp nz,loop
