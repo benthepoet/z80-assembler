@@ -10,7 +10,8 @@ var STATE = {
 	line_buffer: null,
 	line_cursor: null,
 	symbols: {},
-	location_counter: null
+	location_counter: null,
+	output: false
 };
 
 var MNEMONICS_0 = {
@@ -234,12 +235,12 @@ function match_group(token, sym) {
 		return true;
 	}
 	else if (sym === "n" && token === "nn") {
-		if (STATE.operand < 0x00 || STATE.operand > 0xFF) return false;
+		if (STATE.output && (STATE.operand < 0x00 || STATE.operand > 0xFF)) return false;
 		STATE.operand_length = 1;
 		return true;
 	}
 	else if (sym === "nn" && token === sym) {
-		if (STATE.operand < 0x00 || STATE.operand > 0xFFFF) return false;
+		if (STATE.output && (STATE.operand < 0x00 || STATE.operand > 0xFFFF)) return false;
 		STATE.operand_length = 2;
 		return true;
 	}
@@ -531,7 +532,7 @@ function load_line_buffer(line) {
         }
 }
 
-function parse_line(str) {
+function parse_line() {
 	STATE.mnemonic = null;
 	STATE.opcode = null;
 	STATE.operand = null;
@@ -575,7 +576,7 @@ function parse_line(str) {
 
 function assemble(line) {
 	load_line_buffer(line);
-	parse_line(line);
+	parse_line();
 
 	if (STATE.mnemonic === null) {
 		return [];
@@ -623,6 +624,10 @@ function init_location() {
 	return STATE.location_counter;
 }
 
+function enable_output() {
+	STATE.output = true;
+}
+
 function get_state() {
 	return STATE;
 }
@@ -647,15 +652,20 @@ function push_token(mnemonic, token) {
 				var location_counter = STATE.location_counter + 2;
 
 				if (mnemonic === "djnz" || mnemonic === "jr") {
-					value = value > location_counter ? location_counter - value : value - location_counter;
-					value = createToInt(8)(value);
+					value = createToInt(8)(value - location_counter);
 				}
 
 				STATE.operand = value;
 				STATE.tokens.push('nn');
 			}
 			else {
-				throw Error(`Symbol '${token}' not defined.`);
+				if (!STATE.output) {
+					STATE.operand = 0;
+					STATE.tokens.push('nn');
+				}
+				else {
+					throw Error(`Symbol '${token}' not defined.`);
+				}
 			}
 		}
 		else {
@@ -691,6 +701,7 @@ function createToInt(size) {
 }
 
 exports.assemble = assemble;
+exports.enable_output = enable_output;
 exports.get_state = get_state;
 exports.inc_location = inc_location;
 exports.init_location = init_location;
