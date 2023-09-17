@@ -7,22 +7,20 @@ bool should_pad(unsigned char c) {
 }
 
 char *format_line(char const *line, char *buf) {
-    int n = 0;
-    int k = strlen(line);
-    for (int i = 0; i < k; i++) {
+    int i, n = 0;
+    int k = strlen(line) - 1;
+    for (; i < k; i++) {
         unsigned char a = line[i];
         a = a == ',' || a == '\t' ? ' ' : a;
         buf[n++] = a;
 
-        int j = i + 1;
-        if (j < k) {
-            unsigned char b = line[j];
-            if ((a != ' ' && should_pad(b))
-                || (b != ' ' && should_pad(a))) {
-                buf[n++] = ' ';
-            }
+        unsigned char b = line[i + 1];
+        if ((a != ' ' && should_pad(b))
+            || (b != ' ' && should_pad(a))) {
+            buf[n++] = ' ';
         }
     }
+    buf[n] = line[i];
 }
 
 
