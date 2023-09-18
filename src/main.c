@@ -51,11 +51,18 @@ enum token_lookup {
 
 typedef unsigned char byte;
 
-typedef struct Mnemonic0 {
+typedef struct MnemonicFixed {
     char name[4];
     byte prefix;
     byte opcode;
-} Mnemonic;
+} MnemonicFixed;
+
+typedef struct MnemonicPattern {
+    byte prefix;
+    byte opcode;
+    char tokens[MAX_TOKENS];
+    int tcnt;
+}
 
 typedef struct Line {
     char buf[BUF_SIZE];
@@ -64,9 +71,11 @@ typedef struct Line {
     char word[WORD_SIZE];
     char tokens[MAX_TOKENS][WORD_SIZE];
     int tcnt;
+    int prefix;
+    byte opcode;
 } Line;
 
-Mnemonic mnemonics[] = {
+MnemonicFixed mnemonics0[] = {
     { .name = "daa", .prefix = 0x00, .opcode = 0x27 },
     { .name = "cpl", .prefix = 0x00, .opcode = 0x2f },
     { .name = "neg", .prefix = 0xed, .opcode = 0x44 },
@@ -87,9 +96,34 @@ byte normalize_whitespace(byte b) {
     return b == ',' || b == '\t' || b == '\n' ? ' ' : b;
 }
 
+bool matches_group(const char *group) {
+    return true;
+}
+
+void set_opcode(Line *ln, int prefix, byte opcode) {
+    ln->prefix = prefix;
+    ln->opcode = opcode;
+}
+
+bool add_adc_sub_sbc_group_1(Line *ln) {
+    int i = 0;
+    if (strcmp(ln->tokens[i++], "a") == 0
+        && (matches(ln, i, "r2", 0x00, 0x80)
+        || matches(ln, i, "n", 0x00, 0xc0)
+        || matches(ln, i, "( hl )", 0x00, 0x86)
+        || matches(ln, i, "( ix + dp )", 0x00, 0xDD)
+        || matches(ln, i, "( iy + dp )", 0x00, 0xFD))) {
+        return true;
+    }
+
+    return false;
+}
+
 void read_next(Line *ln) {
     int i = 0;
     int k = strlen(ln->buf);
+
+    // Eat up any whitespace
     while (ln->buf[ln->curs] == ' ' && ln->curs < k) {
         ln->curs++;
     }
@@ -124,7 +158,7 @@ void parse_line(Line *ln) {
 
     read_next(ln);
     while (strcmp(ln->word, "") != 0) {
-        printf("%s ", ln->word);
+        printf("%s", ln->word);
         push_token(ln);
         read_next(ln);
     }
@@ -180,6 +214,12 @@ int read_lines(char *file) {
 
         if (ln.tcnt == 0) {
             printf("Searching for '%s'\n", ln.mnem);
+            for (int i = 0; i < 10; i++) {
+                MnemonicFixed mnem = mnemonics0[i];
+                if (strcmp(ln.mnem, mnem.name) == 0) {
+                    printf("Prefix: %02x, Opcode: %02x\n", mnem.prefix, mnem.opcode);
+                }
+            }
         }
     }
 
