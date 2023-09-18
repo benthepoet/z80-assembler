@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
 
@@ -6,13 +7,14 @@
 
 typedef unsigned char byte;
 
-typedef struct LineState {
+typedef struct Line {
     char buf[BUF_SIZE];
     int curs;
     char mnem[BUF_SIZE];
     char word[BUF_SIZE];
-    char *toks[];
-} LineState;
+    char *toks[8];
+    int tcnt;
+} Line;
 
 bool is_unpadded(byte a, byte b) {
     return a != ' ' && b >= '(' && b <= '+';
@@ -22,7 +24,7 @@ byte normalize_whitespace(byte b) {
     return b == ',' || b == '\t' || b == '\n' ? ' ' : b;
 }
 
-void read_next(LineState *ln) {
+void read_next(Line *ln) {
     int i = 0;
     int k = strlen(ln->buf);
     while (ln->buf[ln->curs] == ' ' && ln->curs < k) {
@@ -36,8 +38,23 @@ void read_next(LineState *ln) {
     ln->word[i] = '\0';
 }
 
-void tokenize_line(char const *buf) {
+void free_line(Line *ln) {
+    for (int i = 0; i < ln->tcnt; i++) {
+        free(ln->toks[i]);
+    }
+}
 
+void tokenize_line(Line *ln) {
+    ln->tcnt = 0;
+    read_next(ln);
+    while (strlen(ln->word) != 0) {
+        printf("%s ", ln->word);
+        ln->toks[ln->tcnt] = malloc(sizeof(ln->word));
+        strcpy(ln->toks[ln->tcnt++], ln->word);
+        read_next(ln);
+    }
+
+    printf("\nFound %d tokens\n", ln->tcnt);
 }
 
 void format_line(char const *buf, char *fmt) {
@@ -77,17 +94,15 @@ int read_lines(char *file) {
     }
 
     while (fgets(buf, BUF_SIZE, fp)) {
-        LineState ln = { .curs = 0 };
+        Line ln = { .curs = 0 };
         format_line(buf, ln.buf);
         printf("%s\n", ln.buf);
 
-        read_next(&ln);
-        while (strlen(ln.word) != 0) {
-            printf("%s ", ln.word);
-            read_next(&ln);
-        }
+        tokenize_line(&ln);
 
         printf("\n");
+
+        free_line(&ln);
     }
 
     fclose(fp);
