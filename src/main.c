@@ -32,16 +32,14 @@ char *format_line(char const *line, char *buf) {
         }
     }
 
-    if (line[i] != ';' && line[i] != ' ') {
+    if (line[i] != ';') {
         buf[n++] = line[i];
-    } else if (i > 0 && line[i - 1] == ' ') {
-        n--;
     }
     buf[n] = '\0';
 }
 
 int main() {
-    char s[] = "ld (ix+d),h ";
+    char s[] = "ld (ix+d),h  ;";
     char o[32];
     format_line(s, o);
 
