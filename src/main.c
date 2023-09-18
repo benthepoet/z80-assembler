@@ -22,9 +22,6 @@ char *format_line(char const *line, char *buf) {
         if (a == ' ' && b == a) {
             continue;
         } else if (a == ';') {
-            if (i > 0 && line[i - 1] == ' ') {
-                buf[--n] = '\0';
-            }
             break;
         }
         
@@ -35,18 +32,20 @@ char *format_line(char const *line, char *buf) {
         }
     }
 
-    if (line[i] != ';') {
+    if (line[i] != ';' && line[i] != ' ') {
         buf[n++] = line[i];
-        buf[n] = '\0';
+    } else if (i > 0 && line[i - 1] == ' ') {
+        n--;
     }
+    buf[n] = '\0';
 }
 
 int main() {
-    char s[] = "ld (ix+6),h ; Load a value";
+    char s[] = "ld (ix+d),h ";
     char o[32];
     format_line(s, o);
 
-    printf("%s\n", o);
+    printf("%s | %d\n", o, strlen(o));
 
     return 0;
 }
