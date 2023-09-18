@@ -19,8 +19,13 @@ char *format_line(char const *line, char *buf) {
         byte a = normalize_whitespace(line[i]);
         byte b = normalize_whitespace(line[i + 1]);
         
-        if (a == b && a == ' ') {
+        if (a == ' ' && b == a) {
             continue;
+        } else if (a == ';') {
+            if (i > 0 && line[i - 1] == ' ') {
+                buf[--n] = '\0';
+            }
+            break;
         }
         
         buf[n++] = a;
@@ -29,14 +34,17 @@ char *format_line(char const *line, char *buf) {
             buf[n++] = ' ';
         }
     }
-    buf[n++] = line[i];
-    buf[n] = '\0';
+
+    if (line[i] != ';') {
+        buf[n++] = line[i];
+        buf[n] = '\0';
+    }
 }
 
 
 
 int main() {
-    char s[] = "ld     (ix+6)   ,,,,h";
+    char s[] = "ld (ix+6),h ;";
     char o[32];
     format_line(s, o);
 
