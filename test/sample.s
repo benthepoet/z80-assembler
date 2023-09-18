@@ -10,6 +10,7 @@ start:
 	inc hl
 	jp po,$2f01
 	ld a,$FF
+	exx
 loop:
 	dec a
 	jr nz,loop

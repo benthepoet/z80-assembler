@@ -51,6 +51,12 @@ enum token_lookup {
 
 typedef unsigned char byte;
 
+typedef struct Mnemonic0 {
+    char name[4];
+    byte prefix;
+    byte opcode;
+} Mnemonic;
+
 typedef struct Line {
     char buf[BUF_SIZE];
     int curs;
@@ -59,6 +65,19 @@ typedef struct Line {
     char tokens[MAX_TOKENS][WORD_SIZE];
     int tcnt;
 } Line;
+
+Mnemonic mnemonics[] = {
+    { .name = "daa", .prefix = 0x00, .opcode = 0x27 },
+    { .name = "cpl", .prefix = 0x00, .opcode = 0x2f },
+    { .name = "neg", .prefix = 0xed, .opcode = 0x44 },
+    { .name = "ccf", .prefix = 0x00, .opcode = 0x3f },
+    { .name = "scf", .prefix = 0x00, .opcode = 0x37 },
+    { .name = "nop", .prefix = 0x00, .opcode = 0x00 },
+    { .name = "halt", .prefix = 0x00, .opcode = 0x76 },
+    { .name = "di", .prefix = 0x00, .opcode = 0xf3 },
+    { .name = "ei", .prefix = 0x00, .opcode = 0xfb },
+    { .name = "exx", .prefix = 0x00, .opcode = 0xd9 },
+};
 
 bool is_unpadded(byte a, byte b) {
     return a != ' ' && b >= '(' && b <= '+';
@@ -86,12 +105,25 @@ void push_token(Line *ln) {
     strcpy(ln->tokens[ln->tcnt++], ln->word);
 }
 
-void tokenize_line(Line *ln) {
+void parse_line(Line *ln) {
     ln->curs = 0;
     ln->tcnt = 0;
+    ln->mnem[0] = '\0';
 
     read_next(ln);
-    while (strlen(ln->word) != 0) {
+
+    if (ln->word[strlen(ln->word) - 1] == ':') {
+        printf("Label %s\n", ln->word);
+        read_next(ln);
+    }
+
+    if (strcmp(ln->word, "") != 0) {
+        printf("Mnemonic %s\n", ln->word);
+        strcpy(ln->mnem, ln->word);
+    }
+
+    read_next(ln);
+    while (strcmp(ln->word, "") != 0) {
         printf("%s ", ln->word);
         push_token(ln);
         read_next(ln);
@@ -140,7 +172,15 @@ int read_lines(char *file) {
 
     while (fgets(buf, BUF_SIZE, fp)) {
         format_line(buf, ln.buf);
-        tokenize_line(&ln);
+        parse_line(&ln);
+
+        if (strlen(ln.mnem) == 0) {
+            continue;
+        }
+
+        if (ln.tcnt == 0) {
+            printf("Searching for '%s'\n", ln.mnem);
+        }
     }
 
     fclose(fp);
