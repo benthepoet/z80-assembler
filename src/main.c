@@ -41,10 +41,8 @@ char *format_line(char const *line, char *buf) {
     }
 }
 
-
-
 int main() {
-    char s[] = "ld (ix+6),h ;";
+    char s[] = "ld (ix+6),h ; Load a value";
     char o[32];
     format_line(s, o);
 
