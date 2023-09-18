@@ -4,15 +4,59 @@
 #include <stdbool.h>
 
 #define BUF_SIZE 2 << 7
+#define WORD_SIZE 2 << 4
+#define MAX_TOKENS 2 << 3
+
+enum token_lookup {
+    zero = 0x00,
+    one = 0x01,
+    two = 0x02,
+    three = 0x03,
+    four = 0x04,
+    five = 0x05,
+    six = 0x06,
+    seven = 0x07,
+    a = 0x08,
+    b = 0x09,
+    c = 0x0a,
+    d = 0x0b,
+    e = 0x0c,
+    h = 0x0d,
+    l = 0x0e,
+    bc = 0x0f,
+    de = 0x10,
+    hl = 0x11,
+    ix = 0x12,
+    iy = 0x13,
+    sp = 0x14,
+    n = 0x15,
+    nn = 0x16,
+    i = 0x17,
+    r = 0x18,
+    lp = 0x19,
+    rp = 0x1a,
+    eq = 0x1b,
+    pl = 0x1c,
+    af = 0x1d,
+    afp = 0x1e,
+    nz = 0x1f,
+    z = 0x20,
+    nc = 0x21,
+    cr = 0x22,
+    po = 0x23,
+    pe = 0x24,
+    p = 0x25,
+    m = 0x26
+};
 
 typedef unsigned char byte;
 
 typedef struct Line {
     char buf[BUF_SIZE];
     int curs;
-    char mnem[BUF_SIZE];
-    char word[BUF_SIZE];
-    char *toks[8];
+    char mnem[WORD_SIZE];
+    char word[WORD_SIZE];
+    char tokens[MAX_TOKENS][WORD_SIZE];
     int tcnt;
 } Line;
 
@@ -38,19 +82,18 @@ void read_next(Line *ln) {
     ln->word[i] = '\0';
 }
 
-void free_line(Line *ln) {
-    for (int i = 0; i < ln->tcnt; i++) {
-        free(ln->toks[i]);
-    }
+void push_token(Line *ln) {
+    strcpy(ln->tokens[ln->tcnt++], ln->word);
 }
 
 void tokenize_line(Line *ln) {
+    ln->curs = 0;
     ln->tcnt = 0;
+
     read_next(ln);
     while (strlen(ln->word) != 0) {
         printf("%s ", ln->word);
-        ln->toks[ln->tcnt] = malloc(sizeof(ln->word));
-        strcpy(ln->toks[ln->tcnt++], ln->word);
+        push_token(ln);
         read_next(ln);
     }
 
@@ -93,16 +136,11 @@ int read_lines(char *file) {
         return -1;
     }
 
+    Line ln;
+
     while (fgets(buf, BUF_SIZE, fp)) {
-        Line ln = { .curs = 0 };
         format_line(buf, ln.buf);
-        printf("%s\n", ln.buf);
-
         tokenize_line(&ln);
-
-        printf("\n");
-
-        free_line(&ln);
     }
 
     fclose(fp);
