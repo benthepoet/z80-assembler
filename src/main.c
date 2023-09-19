@@ -196,7 +196,7 @@ void format_line(char const *buf, char *fmt) {
 void assemble_line(Line *ln) {
     int n = ln->prefix;
     int b = 0;
-    int a = 0;
+    byte a = 0;
     while (n != 0) {
         a = n & 0xff;
         b = (b << 8) | a;
