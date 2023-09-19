@@ -10,6 +10,7 @@ start:
 	inc hl
 	jp po,$2f01
 	ld a,$FF
+	ld (ix+$50),h
 	exx
 loop:
 	dec a

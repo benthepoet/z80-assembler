@@ -24,6 +24,8 @@ typedef struct Line {
     int tcnt;
     int prefix;
     byte opcode;
+    int operand;
+    byte displacement;
 } Line;
 
 MnemonicFixed mnemonics0[] = {
@@ -56,6 +58,13 @@ void set_opcode(Line *ln, int prefix, byte opcode) {
     ln->opcode = opcode;
 }
 
+bool constant_group(Line *ln) {
+    if (ln->tcnt == 2 && !strcmp(ln->tokens[0], "=") && !strcmp(ln->tokens[1], "nn")) {
+        return true;
+    }
+    return false;
+}
+
 bool add_adc_sub_sbc_group_1(Line *ln) {
     int i = 0;
     if (strcmp(ln->tokens[i++], "a") == 0
@@ -86,8 +95,34 @@ void read_next(Line *ln) {
     ln->word[i] = '\0';
 }
 
-void push_token(Line *ln) {
-    strcpy(ln->tokens[ln->tcnt++], ln->word);
+void push_token(Line *ln, const char *token) {
+    strcpy(ln->tokens[ln->tcnt++], token);
+}
+
+// This is where we capture operands and calculate jump offsets
+void parse_word(Line *ln) {
+    char *token = ln->word;
+
+    if (token[0] == '$') {
+        // If '+' preceeded then it is a displacement
+        if (ln->tcnt > 1 && strcmp(ln->tokens[ln->tcnt - 1], "+")) {
+            ln->displacement = 0; // TODO: Parse number
+            push_token(ln, "dp");
+        }
+        // Otherwise just a hex operand
+        else {
+            ln->operand = 0; // TODO: Parse number
+            push_token(ln, "nn");
+        }
+    }
+    else if (strlen(token) > 2 && !strcmp(token, "af'")) {
+        // Handle symbols 
+        push_token(ln, "nn");
+    }
+    else {
+        // Standard token
+        push_token(ln, token);
+    }
 }
 
 void parse_line(Line *ln) {
@@ -109,8 +144,8 @@ void parse_line(Line *ln) {
 
     read_next(ln);
     while (strcmp(ln->word, "") != 0) {
-        printf("%s", ln->word);
-        push_token(ln);
+        parse_word(ln);
+        printf("%s %s : ", ln->word, ln->tokens[ln->tcnt - 1]);
         read_next(ln);
     }
 
@@ -159,10 +194,12 @@ int read_lines(char *file) {
         format_line(buf, ln.buf);
         parse_line(&ln);
 
+        // No mnemonic found
         if (strlen(ln.mnem) == 0) {
             continue;
         }
 
+        // Search fixed mnemonics and directives
         if (ln.tcnt == 0) {
             printf("Searching for '%s'\n", ln.mnem);
             for (int i = 0; i < 10; i++) {
@@ -171,6 +208,10 @@ int read_lines(char *file) {
                     printf("Prefix: %02x, Opcode: %02x\n", mnem.prefix, mnem.opcode);
                 }
             }
+        } 
+        // Search pattern mnemonics
+        else {
+
         }
     }
 
