@@ -18,6 +18,7 @@ typedef struct MnemonicFixed {
 typedef struct Line {
     char buf[BUF_SIZE];
     int curs;
+    char label[WORD_SIZE];
     char mnem[WORD_SIZE];
     char word[WORD_SIZE];
     char tokens[MAX_TOKENS][WORD_SIZE];
@@ -79,7 +80,7 @@ bool add_adc_sub_sbc_group_1(Line *ln) {
     return false;
 }
 
-char *read_word(Line *ln) {
+void read_word(Line *ln) {
     int i = 0;
     int k = strlen(ln->buf);
 
@@ -88,12 +89,12 @@ char *read_word(Line *ln) {
         ln->curs++;
     }
 
+    // Read characters until the next space of end of line
     while (ln->buf[ln->curs] != ' ' && ln->curs < k) {
         ln->word[i++] = ln->buf[ln->curs++];
     }
 
     ln->word[i] = '\0';
-    return ln->word;
 }
 
 void push_token(Line *ln, const char *token) {
@@ -101,9 +102,10 @@ void push_token(Line *ln, const char *token) {
 }
 
 // This is where we capture operands and calculate jump offsets
-void parse_word(Line *ln) {
+void parse_token(Line *ln) {
     char *token = ln->word;
 
+    // Handle numeric operands
     if (token[0] == '$') {
         int value = (int)strtol(++token, NULL, 16);
 
@@ -118,12 +120,12 @@ void parse_word(Line *ln) {
             push_token(ln, "nn");
         }
     }
+    // Handle symbols
     else if (strlen(token) > 2 && !strcmp(token, "af'")) {
-        // Handle symbols 
         push_token(ln, "nn");
     }
+    // Handle literals
     else {
-        // Standard token
         push_token(ln, token);
     }
 }
@@ -135,19 +137,23 @@ void parse_line(Line *ln) {
 
     read_word(ln);
 
+    // Look if the first word is a label
     if (ln->word[strlen(ln->word) - 1] == ':') {
         printf("Label %s\n", ln->word);
+        strcpy(ln->label, ln->word);
         read_word(ln);
     }
 
+    // Next word must be a mnemonic
     if (strcmp(ln->word, "") != 0) {
         printf("Mnemonic %s\n", ln->word);
         strcpy(ln->mnem, ln->word);
     }
 
+    // Parse any tokens that follow
     read_word(ln);
     while (strcmp(ln->word, "") != 0) {
-        parse_word(ln);
+        parse_token(ln);
         printf("%s %s : ", ln->word, ln->tokens[ln->tcnt - 1]);
         read_word(ln);
     }
@@ -162,14 +168,18 @@ void format_line(char const *buf, char *fmt) {
         byte a = normalize_whitespace(buf[i]);
         byte b = normalize_whitespace(buf[i + 1]);
         
+        // Condense consecutive spaces
         if (a == ' ' && b == a) {
             continue;
-        } else if (a == ';') {
+        } 
+        // Stop formatting if we've hit a comment
+        else if (a == ';') {
             break;
         }
         
         fmt[n++] = a;
         
+        // Add padding for special characters
         if (is_unpadded(a, b) || is_unpadded(b, a)) {
             fmt[n++] = ' ';
         }
@@ -194,15 +204,23 @@ int read_lines(char *file) {
     Line ln;
 
     while (fgets(buf, BUF_SIZE, fp)) {
+        // Clean up whitespace and add padding
         format_line(buf, ln.buf);
+
+        // Extract label, mnemonic, and tokens
         parse_line(&ln);
 
-        // No mnemonic found
+        // Add label to symbol table
+        if (strlen(ln.label) > 0) {
+            // Set value to location counter
+        }
+
+        // Skip the line if no mnemonic found
         if (strlen(ln.mnem) == 0) {
             continue;
         }
 
-        // Search fixed mnemonics and directives
+        // Search mnemonics and directives with no arguments
         if (ln.tcnt == 0) {
             printf("Searching for '%s'\n", ln.mnem);
             for (int i = 0; i < 10; i++) {
@@ -212,9 +230,13 @@ int read_lines(char *file) {
                 }
             }
         } 
-        // Search pattern mnemonics
+        // Search for constant
         else if (constant_group(&ln)) {
             printf("Constant: %s = %02x\n", ln.mnem, ln.operand);
+        }
+        // Search mnemonics with arguments
+        else {
+            // Get matching function for mnemonic
         }
     }
 
