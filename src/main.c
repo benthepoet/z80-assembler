@@ -11,7 +11,7 @@ typedef unsigned char byte;
 
 typedef struct MnemonicFixed {
     char name[4];
-    byte prefix;
+    int prefix;
     byte opcode;
 } MnemonicFixed;
 
@@ -29,6 +29,8 @@ typedef struct Line {
     byte displacement;
 } Line;
 
+int location_counter = 0;
+
 MnemonicFixed mnemonics0[] = {
     { .name = "daa", .prefix = 0x00, .opcode = 0x27 },
     { .name = "cpl", .prefix = 0x00, .opcode = 0x2f },
@@ -39,7 +41,7 @@ MnemonicFixed mnemonics0[] = {
     { .name = "halt", .prefix = 0x00, .opcode = 0x76 },
     { .name = "di", .prefix = 0x00, .opcode = 0xf3 },
     { .name = "ei", .prefix = 0x00, .opcode = 0xfb },
-    { .name = "exx", .prefix = 0x00, .opcode = 0xd9 },
+    { .name = "exx", .prefix = 0xffee, .opcode = 0xd9 },
 };
 
 bool is_unpadded(byte a, byte b) {
@@ -191,6 +193,18 @@ void format_line(char const *buf, char *fmt) {
     fmt[n] = '\0';
 }
 
+void assemble_line(Line *ln) {
+    int n = ln->prefix;
+    int b = 0;
+    int a = 0;
+    while (n != 0) {
+        a = n & 0xff;
+        b = (b << 8) | a;
+        n >>= 8;
+    }
+    printf("Prefix shifted: %02x", b);
+}
+
 int read_lines(char *file) {
     char buf[BUF_SIZE];
     char fmt[BUF_SIZE];
@@ -227,6 +241,9 @@ int read_lines(char *file) {
                 MnemonicFixed mnem = mnemonics0[i];
                 if (!strcmp(ln.mnem, mnem.name)) {
                     printf("Prefix: %02x, Opcode: %02x\n", mnem.prefix, mnem.opcode);
+                    // Assemble the instruction
+                    set_opcode(&ln, mnem.prefix, mnem.opcode);
+                    assemble_line(&ln);
                 }
             }
         } 
@@ -237,7 +254,11 @@ int read_lines(char *file) {
         // Search mnemonics with arguments
         else {
             // Get matching function for mnemonic
+
+            // Assemble the instruction if we have an opcode
         }
+
+        
     }
 
     fclose(fp);
