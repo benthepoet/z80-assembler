@@ -79,7 +79,7 @@ bool add_adc_sub_sbc_group_1(Line *ln) {
     return false;
 }
 
-void read_next(Line *ln) {
+char *read_word(Line *ln) {
     int i = 0;
     int k = strlen(ln->buf);
 
@@ -93,6 +93,7 @@ void read_next(Line *ln) {
     }
 
     ln->word[i] = '\0';
+    return ln->word;
 }
 
 void push_token(Line *ln, const char *token) {
@@ -104,14 +105,16 @@ void parse_word(Line *ln) {
     char *token = ln->word;
 
     if (token[0] == '$') {
+        int value = (int)strtol(++token, NULL, 16);
+
         // If '+' preceeded then it is a displacement
-        if (ln->tcnt > 1 && strcmp(ln->tokens[ln->tcnt - 1], "+")) {
-            ln->displacement = 0; // TODO: Parse number
+        if (ln->tcnt > 0 && !strcmp(ln->tokens[ln->tcnt - 1], "+")) {
+            ln->displacement = value;
             push_token(ln, "dp");
         }
         // Otherwise just a hex operand
         else {
-            ln->operand = 0; // TODO: Parse number
+            ln->operand = value;
             push_token(ln, "nn");
         }
     }
@@ -130,11 +133,11 @@ void parse_line(Line *ln) {
     ln->tcnt = 0;
     ln->mnem[0] = '\0';
 
-    read_next(ln);
+    read_word(ln);
 
     if (ln->word[strlen(ln->word) - 1] == ':') {
         printf("Label %s\n", ln->word);
-        read_next(ln);
+        read_word(ln);
     }
 
     if (strcmp(ln->word, "") != 0) {
@@ -142,11 +145,11 @@ void parse_line(Line *ln) {
         strcpy(ln->mnem, ln->word);
     }
 
-    read_next(ln);
+    read_word(ln);
     while (strcmp(ln->word, "") != 0) {
         parse_word(ln);
         printf("%s %s : ", ln->word, ln->tokens[ln->tcnt - 1]);
-        read_next(ln);
+        read_word(ln);
     }
 
     printf("\nFound %d tokens\n", ln->tcnt);
@@ -210,8 +213,8 @@ int read_lines(char *file) {
             }
         } 
         // Search pattern mnemonics
-        else {
-
+        else if (constant_group(&ln)) {
+            printf("Constant: %s = %02x\n", ln.mnem, ln.operand);
         }
     }
 
