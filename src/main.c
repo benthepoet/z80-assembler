@@ -16,6 +16,20 @@ typedef struct MnemonicFixed {
     byte opcode;
 } MnemonicFixed;
 
+typedef struct Opcode {
+    int prefix;
+    byte code;
+} Opcode;
+
+typedef struct Operand {
+    int value;
+    byte length;
+} Operand;
+
+typedef struct Displacement {
+    byte value;
+} Displacement;
+
 typedef struct Line {
     char buf[BUF_SIZE];
     int curs;
@@ -26,8 +40,8 @@ typedef struct Line {
     int tcnt;
     int prefix;
     byte opcode;
-    int operand;
-    byte displacement;
+    Operand *operand;
+    Displacement *displacement;
 } Line;
 
 int location_counter = 0;
@@ -114,12 +128,18 @@ void parse_token(Line *ln) {
 
         // If '+' preceeded then it is a displacement
         if (ln->tcnt > 0 && !strcmp(ln->tokens[ln->tcnt - 1], "+")) {
-            ln->displacement = value;
+            if (ln->displacement == NULL) {
+                ln->displacement = malloc(sizeof(Displacement));
+            }
+            ln->displacement->value = value;
             push_token(ln, "dp");
         }
         // Otherwise just a hex operand
         else {
-            ln->operand = value;
+            if (ln->operand == NULL) {
+                ln->operand = malloc(sizeof(Operand));
+            }
+            ln->operand->value = value;
             push_token(ln, "nn");
         }
     }
@@ -137,6 +157,8 @@ void parse_line(Line *ln) {
     ln->curs = 0;
     ln->tcnt = 0;
     ln->mnem[0] = '\0';
+    ln->displacement = NULL;
+    ln->operand = NULL;
 
     read_word(ln);
 
@@ -196,7 +218,14 @@ void format_line(char const *buf, char *fmt) {
 
 void assemble_line(Line *ln) {
     // TODO: Shift the operand
+    if (ln->operand != NULL) {
+
+    }
+
     // TODO: Shift the displacement
+    if (ln->displacement != NULL) {
+        printf("%02x\n", ln->displacement->value);
+    }
 
     // Shift the prefix and opcode
     int n = ln->prefix;
@@ -210,9 +239,17 @@ void assemble_line(Line *ln) {
     // TODO: Write bytes and increment location counter
 }
 
+void free_line(Line *ln) {
+    if (ln->displacement != NULL) {
+        free(ln->displacement);
+    }
+    if (ln->operand != NULL) {
+        free(ln->operand);
+    }
+}
+
 int read_lines(char *file) {
     char buf[BUF_SIZE];
-    char fmt[BUF_SIZE];
 
     FILE *fp = fopen(file, "r");
     if (fp == NULL) {
@@ -241,7 +278,6 @@ int read_lines(char *file) {
 
         // Search mnemonics and directives with no arguments
         if (ln.tcnt == 0) {
-            printf("Searching for '%s'\n", ln.mnem);
             for (int i = 0; i < 10; i++) {
                 MnemonicFixed mnem = mnemonics0[i];
                 if (!strcmp(ln.mnem, mnem.name)) {
@@ -263,7 +299,8 @@ int read_lines(char *file) {
             // Assemble the instruction if we have an opcode
         }
 
-        
+        // Free resources
+        free_line(&ln);
     }
 
     fclose(fp);
