@@ -7,48 +7,6 @@
 #define WORD_SIZE 2 << 4
 #define MAX_TOKENS 2 << 3
 
-enum token_lookup {
-    zero = 0x00,
-    one = 0x01,
-    two = 0x02,
-    three = 0x03,
-    four = 0x04,
-    five = 0x05,
-    six = 0x06,
-    seven = 0x07,
-    a = 0x08,
-    b = 0x09,
-    c = 0x0a,
-    d = 0x0b,
-    e = 0x0c,
-    h = 0x0d,
-    l = 0x0e,
-    bc = 0x0f,
-    de = 0x10,
-    hl = 0x11,
-    ix = 0x12,
-    iy = 0x13,
-    sp = 0x14,
-    n = 0x15,
-    nn = 0x16,
-    i = 0x17,
-    r = 0x18,
-    lp = 0x19,
-    rp = 0x1a,
-    eq = 0x1b,
-    pl = 0x1c,
-    af = 0x1d,
-    afp = 0x1e,
-    nz = 0x1f,
-    z = 0x20,
-    nc = 0x21,
-    cr = 0x22,
-    po = 0x23,
-    pe = 0x24,
-    p = 0x25,
-    m = 0x26
-};
-
 typedef unsigned char byte;
 
 typedef struct MnemonicFixed {
@@ -56,13 +14,6 @@ typedef struct MnemonicFixed {
     byte prefix;
     byte opcode;
 } MnemonicFixed;
-
-typedef struct MnemonicPattern {
-    byte prefix;
-    byte opcode;
-    char tokens[MAX_TOKENS];
-    int tcnt;
-}
 
 typedef struct Line {
     char buf[BUF_SIZE];
@@ -96,7 +47,7 @@ byte normalize_whitespace(byte b) {
     return b == ',' || b == '\t' || b == '\n' ? ' ' : b;
 }
 
-bool matches_group(const char *group) {
+bool matches(Line *ln, int i, const char *pattern, int prefix, int opcode) {
     return true;
 }
 
@@ -216,7 +167,7 @@ int read_lines(char *file) {
             printf("Searching for '%s'\n", ln.mnem);
             for (int i = 0; i < 10; i++) {
                 MnemonicFixed mnem = mnemonics0[i];
-                if (strcmp(ln.mnem, mnem.name) == 0) {
+                if (!strcmp(ln.mnem, mnem.name)) {
                     printf("Prefix: %02x, Opcode: %02x\n", mnem.prefix, mnem.opcode);
                 }
             }
