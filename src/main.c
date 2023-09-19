@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 #define BUF_SIZE 2 << 7
 #define WORD_SIZE 2 << 4
@@ -194,15 +195,19 @@ void format_line(char const *buf, char *fmt) {
 }
 
 void assemble_line(Line *ln) {
+    // TODO: Shift the operand
+    // TODO: Shift the displacement
+
+    // Shift the prefix and opcode
     int n = ln->prefix;
-    int b = 0;
-    byte a = 0;
-    while (n != 0) {
-        a = n & 0xff;
+    int b = ln->opcode;
+    do {
+        byte a = n & 0xff;
         b = (b << 8) | a;
-        n >>= 8;
-    }
-    printf("Prefix shifted: %02x", b);
+    } while(n >>= 8);
+    printf("Shifted: %02x\n", b);
+
+    // TODO: Write bytes and increment location counter
 }
 
 int read_lines(char *file) {
