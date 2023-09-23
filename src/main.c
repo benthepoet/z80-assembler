@@ -47,16 +47,16 @@ typedef struct Line {
 int location_counter = 0;
 
 MnemonicFixed mnemonics0[] = {
-    { .name = "daa", .prefix = 0x00, .opcode = 0x27 },
-    { .name = "cpl", .prefix = 0x00, .opcode = 0x2f },
-    { .name = "neg", .prefix = 0xed, .opcode = 0x44 },
-    { .name = "ccf", .prefix = 0x00, .opcode = 0x3f },
-    { .name = "scf", .prefix = 0x00, .opcode = 0x37 },
-    { .name = "nop", .prefix = 0x00, .opcode = 0x00 },
-    { .name = "halt", .prefix = 0x00, .opcode = 0x76 },
-    { .name = "di", .prefix = 0x00, .opcode = 0xf3 },
-    { .name = "ei", .prefix = 0x00, .opcode = 0xfb },
-    { .name = "exx", .prefix = 0xffee, .opcode = 0xd9 },
+    { "daa",    0x00,   0x27 },
+    { "cpl",    0x00,   0x2f },
+    { "neg",    0xed,   0x44 },
+    { "ccf",    0x00,   0x3f },
+    { "scf",    0x00,   0x37 },
+    { "nop",    0x00,   0x00 },
+    { "halt",   0x00,   0x76 },
+    { "di",     0x00,   0xf3 },
+    { "ei",     0x00,   0xfb },
+    { "exx",    0x00,   0xd9 },
 };
 
 bool is_unpadded(byte a, byte b) {
@@ -154,9 +154,8 @@ void parse_token(Line *ln) {
 }
 
 void parse_line(Line *ln) {
-    ln->curs = 0;
-    ln->tcnt = 0;
     ln->mnem[0] = '\0';
+    ln->curs = ln->tcnt = 0;
     ln->displacement = NULL;
     ln->operand = NULL;
 
